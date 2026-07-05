@@ -3,15 +3,6 @@ const { google } = require('googleapis')
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_t64uj3iFNSNl-_SNGotD5bPb1a81QVA'
 const SHEET_TAB = process.env.SHEET_TAB || 'Seguimiento'
 
-const FIELD_TO_COLUMN = {
-  tipo: 'C',
-  naturaleza: 'F',
-  tipoIntervencion: 'G',
-  tratamiento: 'H',
-  estado: 'I',
-  notas: 'J',
-}
-
 function apiError(statusCode, code, error, detail) {
   const err = new Error(error)
   err.statusCode = statusCode
@@ -70,7 +61,7 @@ function buildAuth() {
   })
 }
 
-function classifyGoogleError(err, range) {
+function classifyGoogleError(err) {
   const httpStatus = err?.response?.status
   const googleMsg =
     err?.response?.data?.error?.message ||
@@ -101,15 +92,6 @@ function classifyGoogleError(err, range) {
       'SPREADSHEET_NOT_FOUND',
       `Hoja de cálculo no encontrada (ID: ${SPREADSHEET_ID}).`,
       `Verifica que el SPREADSHEET_ID en las variables de entorno sea correcto. Respuesta de Google: ${googleMsg}`
-    )
-  }
-
-  if (httpStatus === 400 && range) {
-    return apiError(
-      400,
-      'INVALID_RANGE',
-      `El rango "${range}" no es válido en la hoja "${SHEET_TAB}".`,
-      `Verifica que la pestaña se llame exactamente "${SHEET_TAB}" (mayúsculas incluidas). Respuesta de Google: ${googleMsg}`
     )
   }
 
@@ -144,13 +126,15 @@ function parseBody(req) {
 
 function sendError(res, err) {
   const statusCode = err.statusCode || 500
-  console.error(`[api/update] ${err.code || 'ERROR'} (HTTP ${statusCode}):`, err.detail || err.message)
+  console.error(`[api/create] ${err.code || 'ERROR'} (HTTP ${statusCode}):`, err.detail || err.message)
   return res.status(statusCode).json({
     error: err.message,
     code: err.code || 'UNKNOWN_ERROR',
     detail: err.detail || null,
   })
 }
+
+const TIPOS_VALIDOS = ['Proceso', 'Atención']
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -173,34 +157,33 @@ module.exports = async function handler(req, res) {
     })
   }
 
-  const { sheetRow, field, value } = body
+  const {
+    nombre,
+    tipo,
+    descripcion = '',
+    responsables = '',
+    naturaleza = '',
+    tipoIntervencion = '',
+    tratamiento = '',
+    estado = '',
+    notas = '',
+  } = body
 
-  if (!sheetRow || !field || value === undefined) {
+  if (!nombre || !nombre.trim()) {
     return res.status(400).json({
-      error: 'Faltan parámetros en la solicitud.',
+      error: 'El nombre del proceso es obligatorio.',
       code: 'MISSING_PARAMS',
-      detail: `Se recibió: ${JSON.stringify({ sheetRow, field, value })}. Se requieren: sheetRow (número), field (${Object.keys(FIELD_TO_COLUMN).map(f => `"${f}"`).join('|')}), value (string).`,
+      detail: 'Se requiere al menos el campo "nombre".',
     })
   }
 
-  if (typeof sheetRow !== 'number' || sheetRow < 2) {
+  if (!TIPOS_VALIDOS.includes(tipo)) {
     return res.status(400).json({
-      error: `sheetRow inválido: ${sheetRow}. Debe ser un número >= 2.`,
-      code: 'INVALID_SHEET_ROW',
-      detail: 'sheetRow=1 sería el encabezado, que nunca debe editarse desde el dashboard.',
+      error: `Tipo inválido: "${tipo}".`,
+      code: 'INVALID_TIPO',
+      detail: `Se esperaba uno de: ${TIPOS_VALIDOS.join(', ')}.`,
     })
   }
-
-  const column = FIELD_TO_COLUMN[field]
-  if (!column) {
-    return res.status(400).json({
-      error: `Campo no editable desde el dashboard: "${field}".`,
-      code: 'FIELD_NOT_EDITABLE',
-      detail: `Solo se permite editar: ${Object.keys(FIELD_TO_COLUMN).join(', ')}.`,
-    })
-  }
-
-  const range = `${SHEET_TAB}!${column}${sheetRow}`
 
   let auth
   try {
@@ -209,17 +192,69 @@ module.exports = async function handler(req, res) {
     return sendError(res, err)
   }
 
+  const sheets = google.sheets({ version: 'v4', auth })
+
+  let nextOrden = 1
   try {
-    const sheets = google.sheets({ version: 'v4', auth })
-    await sheets.spreadsheets.values.update({
+    const ordenResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[value]] },
+      range: `${SHEET_TAB}!A2:A`,
     })
+    const ordenValues = (ordenResponse.data.values || []).flat()
+    const maxOrden = ordenValues.reduce((max, v) => {
+      const n = parseInt(v, 10)
+      return Number.isNaN(n) ? max : Math.max(max, n)
+    }, 0)
+    nextOrden = maxOrden + 1
   } catch (err) {
-    return sendError(res, classifyGoogleError(err, range))
+    return sendError(res, classifyGoogleError(err))
   }
 
-  res.json({ ok: true, range, value })
+  let appendResponse
+  try {
+    appendResponse = await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_TAB}!A:J`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: {
+        values: [[
+          nextOrden,
+          nombre,
+          tipo,
+          descripcion,
+          responsables,
+          naturaleza,
+          tipoIntervencion,
+          tratamiento,
+          estado,
+          notas,
+        ]],
+      },
+    })
+  } catch (err) {
+    return sendError(res, classifyGoogleError(err))
+  }
+
+  // updatedRange llega como "Seguimiento!A15:J15" — extraemos el número de fila.
+  const updatedRange = appendResponse.data.updates?.updatedRange || ''
+  const match = updatedRange.match(/!A(\d+)/)
+  const sheetRow = match ? parseInt(match[1], 10) : null
+
+  res.json({
+    ok: true,
+    process: {
+      sheetRow,
+      orden: String(nextOrden),
+      nombre,
+      tipo,
+      descripcion,
+      responsables,
+      naturaleza,
+      tipoIntervencion,
+      tratamiento,
+      estado,
+      notas,
+    },
+  })
 }

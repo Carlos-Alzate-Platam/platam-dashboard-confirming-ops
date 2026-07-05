@@ -76,5 +76,25 @@ export function useSheets() {
     }
   }, [fetchProcesses])
 
-  return { processes, loading, error, retry: fetchProcesses, updateCell }
+  const createProcess = useCallback(async (fields) => {
+    let res
+    try {
+      res = await fetch('/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      })
+    } catch (networkErr) {
+      console.error('[Platam API] Error de red al llamar /api/create:', networkErr)
+      throw new Error('No se pudo conectar con el servidor al intentar crear el proceso.')
+    }
+
+    if (!res.ok) throw await extractApiError(res)
+
+    const { process } = await res.json()
+    setProcesses(prev => [...prev, process])
+    return process
+  }, [])
+
+  return { processes, loading, error, retry: fetchProcesses, updateCell, createProcess }
 }

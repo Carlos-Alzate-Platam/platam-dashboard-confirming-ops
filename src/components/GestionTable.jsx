@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { COLUMNS, ESTADOS, ESTADO_STYLE, esRiesgo } from '../constants'
+import { COLUMNS, EDITABLE_FIELDS, esRiesgo, ESTADO_STYLE } from '../constants'
 
 function SortIcon({ columnKey, sortKey, sortDir }) {
   if (sortKey !== columnKey) {
@@ -12,7 +12,7 @@ function SortIcon({ columnKey, sortKey, sortDir }) {
   )
 }
 
-function EstadoCell({ process, editCell, editValue, setEditValue, onStartEdit, onSave, saving }) {
+function EstadoCell({ process, editCell, editValue, setEditValue, onStartEdit, onSave }) {
   const isEditing =
     editCell?.sheetRow === process.sheetRow && editCell?.field === 'estado'
 
@@ -25,7 +25,7 @@ function EstadoCell({ process, editCell, editValue, setEditValue, onStartEdit, o
         onBlur={onSave}
         autoFocus
       >
-        {ESTADOS.map(s => (
+        {EDITABLE_FIELDS.estado.map(s => (
           <option key={s} value={s}>{s}</option>
         ))}
       </select>
@@ -41,6 +41,37 @@ function EstadoCell({ process, editCell, editValue, setEditValue, onStartEdit, o
       title="Clic para editar"
     >
       {process.estado || '—'}
+    </span>
+  )
+}
+
+function SelectCell({ process, field, options, extraClass, editCell, editValue, setEditValue, onStartEdit, onSave }) {
+  const isEditing =
+    editCell?.sheetRow === process.sheetRow && editCell?.field === field
+
+  if (isEditing) {
+    return (
+      <select
+        className="edit-select"
+        value={editValue}
+        onChange={e => setEditValue(e.target.value)}
+        onBlur={onSave}
+        autoFocus
+      >
+        {options.map(o => (
+          <option key={o || 'vacio'} value={o}>{o || '—'}</option>
+        ))}
+      </select>
+    )
+  }
+
+  return (
+    <span
+      className={`cell-editable${extraClass ? ` ${extraClass}` : ''}`}
+      onClick={() => onStartEdit(process, field)}
+      title="Clic para editar"
+    >
+      {process[field] || '—'}
     </span>
   )
 }
@@ -73,8 +104,8 @@ function NotasCell({ process, editCell, editValue, setEditValue, onStartEdit, on
   )
 }
 
-export default function GestionTable({ processes, onUpdate }) {
-  const [sortKey, setSortKey] = useState('prioridad')
+export default function GestionTable({ processes, onUpdate, onAddNew }) {
+  const [sortKey, setSortKey] = useState('orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
@@ -86,7 +117,7 @@ export default function GestionTable({ processes, onUpdate }) {
       let aVal = a[sortKey] ?? ''
       let bVal = b[sortKey] ?? ''
 
-      if (sortKey === 'prioridad') {
+      if (sortKey === 'orden') {
         const aNum = parseInt(aVal)
         const bNum = parseInt(bVal)
         if (!isNaN(aNum) && !isNaN(bNum)) {
@@ -109,6 +140,7 @@ export default function GestionTable({ processes, onUpdate }) {
   }
 
   function handleStartEdit(process, field) {
+    if (!(field in EDITABLE_FIELDS)) return
     setEditCell({ sheetRow: process.sheetRow, field })
     setEditValue(process[field] || '')
   }
@@ -132,9 +164,119 @@ export default function GestionTable({ processes, onUpdate }) {
     setEditValue('')
   }
 
+  function renderCell(process, col) {
+    switch (col.key) {
+      case 'orden':
+        return <td key={col.key} className="cell-priority">{process.orden || '—'}</td>
+      case 'nombre':
+        return <td key={col.key} className="cell-name">{process.nombre || '—'}</td>
+      case 'descripcion':
+        return (
+          <td key={col.key}>
+            <span className="cell-desc" title={process.descripcion}>{process.descripcion || '—'}</span>
+          </td>
+        )
+      case 'responsables':
+        return <td key={col.key}>{process.responsables || '—'}</td>
+      case 'naturaleza':
+        return (
+          <td key={col.key}>
+            <SelectCell
+              process={process}
+              field="naturaleza"
+              options={EDITABLE_FIELDS.naturaleza}
+              extraClass={esRiesgo(process.naturaleza) ? 'risk' : 'empty'}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'tipoIntervencion':
+        return (
+          <td key={col.key}>
+            <SelectCell
+              process={process}
+              field="tipoIntervencion"
+              options={EDITABLE_FIELDS.tipoIntervencion}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'tipo':
+        return (
+          <td key={col.key}>
+            <SelectCell
+              process={process}
+              field="tipo"
+              options={EDITABLE_FIELDS.tipo}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'tratamiento':
+        return (
+          <td key={col.key}>
+            <SelectCell
+              process={process}
+              field="tratamiento"
+              options={EDITABLE_FIELDS.tratamiento}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'estado':
+        return (
+          <td key={col.key}>
+            <EstadoCell
+              process={process}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'notas':
+        return (
+          <td key={col.key}>
+            <NotasCell
+              process={process}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
+      default:
+        return <td key={col.key}>{process[col.key] || '—'}</td>
+    }
+  }
+
   return (
     <div className="table-wrapper">
-      {saving && <p className="saving-indicator">Guardando en Sheets...</p>}
+      <div className="table-toolbar">
+        {saving ? <p className="saving-indicator">Guardando en Sheets...</p> : <span />}
+        <button className="add-process-btn" onClick={onAddNew}>+ Nuevo proceso</button>
+      </div>
       <table className="process-table">
         <thead>
           <tr>
@@ -153,40 +295,7 @@ export default function GestionTable({ processes, onUpdate }) {
         <tbody>
           {sorted.map(p => (
             <tr key={p.sheetRow}>
-              <td className="cell-priority">{p.prioridad || '—'}</td>
-              <td className="cell-name">{p.nombre || '—'}</td>
-              <td>
-                <span className="cell-desc" title={p.descripcion}>{p.descripcion || '—'}</span>
-              </td>
-              <td>{p.responsables || '—'}</td>
-              <td>
-                <span className={`cell-naturaleza${esRiesgo(p.naturaleza) ? ' risk' : ' empty'}`}>
-                  {p.naturaleza || '—'}
-                </span>
-              </td>
-              <td>{p.tipoIntervencion || '—'}</td>
-              <td>
-                <EstadoCell
-                  process={p}
-                  editCell={editCell}
-                  editValue={editValue}
-                  setEditValue={setEditValue}
-                  onStartEdit={handleStartEdit}
-                  onSave={handleSave}
-                  saving={saving}
-                />
-              </td>
-              <td>
-                <NotasCell
-                  process={p}
-                  editCell={editCell}
-                  editValue={editValue}
-                  setEditValue={setEditValue}
-                  onStartEdit={handleStartEdit}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                />
-              </td>
+              {COLUMNS.map(col => renderCell(p, col))}
             </tr>
           ))}
         </tbody>

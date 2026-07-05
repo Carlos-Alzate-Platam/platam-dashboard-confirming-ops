@@ -23,27 +23,47 @@ export const ESTADOS = [
   'Bloqueado',
 ]
 
-export const RESPONSABLES = [
-  'Carlos',
+export const TRATAMIENTO = [
   'David',
+  'Carlos',
   'Carlos + David',
   'Gerencia',
 ]
 
+export const TIPO_PROCESO = [
+  'Proceso',
+  'Atención',
+]
+
 export const COLUMNS = [
-  { key: 'prioridad', label: 'Prioridad', width: '80px' },
+  { key: 'orden', label: 'Orden', width: '70px' },
   { key: 'nombre', label: 'Nombre', width: '160px' },
-  { key: 'descripcion', label: 'Descripción', width: '260px' },
+  { key: 'tipo', label: 'Tipo', width: '110px' },
+  { key: 'descripcion', label: 'Descripción', width: '240px' },
   { key: 'responsables', label: 'Responsables', width: '130px' },
   { key: 'naturaleza', label: 'Naturaleza', width: '180px' },
   { key: 'tipoIntervencion', label: 'Tipo intervención', width: '180px' },
+  { key: 'tratamiento', label: 'Tratamiento', width: '130px' },
   { key: 'estado', label: 'Estado', width: '140px' },
   { key: 'notas', label: 'Notas', width: '220px' },
 ]
 
-// Los únicos dos que son true-riesgo → rojo en la tabla y en el mapa
+// Campos editables desde el dashboard, con dropdown de opciones fijas cuando aplica.
+export const EDITABLE_FIELDS = {
+  tipo: TIPO_PROCESO,
+  naturaleza: ['', ...NATURALEZA_RIESGO],
+  tipoIntervencion: TIPO_INTERVENCION,
+  tratamiento: TRATAMIENTO,
+  estado: ESTADOS,
+  notas: null, // texto libre
+}
+
 export function esRiesgo(naturaleza) {
   return Boolean(naturaleza && naturaleza.trim())
+}
+
+export function esAtencion(tipo) {
+  return tipo === 'Atención'
 }
 
 export const ESTADO_STYLE = {

@@ -41,9 +41,8 @@ export default function ProcessPanel({ process, onClose }) {
           isRisk={riesgo}
         />
         <Field label="Tipo de intervención" value={process.tipoIntervencion} />
-        {process.responsables && (
-          <Field label="Responsables" value={process.responsables} />
-        )}
+        <Field label="Responsables" value={process.responsables} />
+        <Field label="Tratamiento" value={process.tratamiento} />
       </div>
     </aside>
   )
