@@ -9,14 +9,14 @@ const FIELD_TO_COLUMN = {
   ordenSecundario: 'B',
   nombre: 'C',
   tipo: 'D',
-  descripcion: 'E',
-  responsables: 'F',
-  naturaleza: 'G',
-  tipoIntervencion: 'H',
-  tratamiento: 'I',
-  estado: 'J',
-  notas: 'K',
-  severidad: 'L',
+  severidad: 'E',
+  descripcion: 'F',
+  responsables: 'G',
+  naturaleza: 'H',
+  tipoIntervencion: 'I',
+  tratamiento: 'J',
+  estado: 'K',
+  notas: 'L',
 }
 
 function apiError(statusCode, code, error, detail) {

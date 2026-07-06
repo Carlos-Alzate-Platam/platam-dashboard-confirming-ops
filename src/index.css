@@ -317,6 +317,45 @@ html, body, #root {
   opacity: 0.8;
 }
 
+/* Tipo chip */
+.tipo-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.tipo-chip:hover {
+  opacity: 0.8;
+}
+
+/* Responsables chips */
+.responsables-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.responsables-cell.empty {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.responsable-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 /* Editable select/input/textarea */
 .edit-select, .edit-input, .edit-textarea {
   background: var(--surface);

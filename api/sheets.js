@@ -158,9 +158,9 @@ module.exports = async function handler(req, res) {
   if (rows.length < 2) return res.json([])
 
   // rows[0] es el encabezado; rows[i] para i>=1 es dato en sheet row i+1
-  // Columnas: A Orden, B Orden_02, C Nombre, D Tipo, E Descripción,
-  // F Responsables, G Naturaleza, H Tipo Intervención, I Tratamiento,
-  // J Estado, K Notas, L Severidad
+  // Columnas: A Orden, B Orden_02, C Nombre, D Tipo, E Severidad,
+  // F Descripción, G Responsables, H Naturaleza, I Tipo Intervención,
+  // J Tratamiento, K Estado, L Notas
   const processes = rows
     .slice(1)
     .map((row, i) => ({
@@ -169,14 +169,14 @@ module.exports = async function handler(req, res) {
       ordenSecundario: row[1] || '',
       nombre: row[2] || '',
       tipo: row[3] || '',
-      descripcion: row[4] || '',
-      responsables: row[5] || '',
-      naturaleza: row[6] || '',
-      tipoIntervencion: row[7] || '',
-      tratamiento: row[8] || '',
-      estado: row[9] || '',
-      notas: row[10] || '',
-      severidad: row[11] || '',
+      severidad: row[4] || '',
+      descripcion: row[5] || '',
+      responsables: row[6] || '',
+      naturaleza: row[7] || '',
+      tipoIntervencion: row[8] || '',
+      tratamiento: row[9] || '',
+      estado: row[10] || '',
+      notas: row[11] || '',
     }))
     .filter(p => p.nombre || p.descripcion)
 

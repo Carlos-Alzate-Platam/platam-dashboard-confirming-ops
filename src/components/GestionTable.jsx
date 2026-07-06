@@ -1,5 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
-import { EDITABLE_FIELDS, esRiesgo, ESTADO_STYLE } from '../constants'
+import {
+  EDITABLE_FIELDS,
+  esRiesgo,
+  ESTADO_STYLE,
+  TIPO_STYLE,
+  parseResponsables,
+  colorForResponsable,
+} from '../constants'
 
 const NUMERIC_SORT_KEYS = ['orden', 'ordenSecundario']
 
@@ -43,6 +50,95 @@ function EstadoCell({ process, editCell, editValue, setEditValue, onStartEdit, o
       title="Clic para editar"
     >
       {process.estado || '—'}
+    </span>
+  )
+}
+
+function TipoCell({ process, editCell, editValue, setEditValue, onStartEdit, onSave }) {
+  const isEditing =
+    editCell?.sheetRow === process.sheetRow && editCell?.field === 'tipo'
+
+  if (isEditing) {
+    return (
+      <select
+        className="edit-select"
+        value={editValue}
+        onChange={e => setEditValue(e.target.value)}
+        onBlur={onSave}
+        autoFocus
+      >
+        {EDITABLE_FIELDS.tipo.map(t => (
+          <option key={t} value={t}>{t}</option>
+        ))}
+      </select>
+    )
+  }
+
+  const style = TIPO_STYLE[process.tipo] || TIPO_STYLE.Proceso
+  return (
+    <span
+      className="tipo-chip"
+      style={{ background: style.bg, color: style.color }}
+      onClick={() => onStartEdit(process, 'tipo')}
+      title="Clic para editar"
+    >
+      {process.tipo || '—'}
+    </span>
+  )
+}
+
+function ResponsablesCell({ process, editCell, editValue, setEditValue, onStartEdit, onSave, onCancel }) {
+  const isEditing =
+    editCell?.sheetRow === process.sheetRow && editCell?.field === 'responsables'
+
+  if (isEditing) {
+    return (
+      <input
+        type="text"
+        className="edit-input"
+        value={editValue}
+        onChange={e => setEditValue(e.target.value)}
+        onBlur={onSave}
+        onKeyDown={e => {
+          if (e.key === 'Escape') onCancel()
+          if (e.key === 'Enter') e.target.blur()
+        }}
+        autoFocus
+      />
+    )
+  }
+
+  const nombres = parseResponsables(process.responsables)
+  if (!nombres.length) {
+    return (
+      <span
+        className="responsables-cell empty"
+        onClick={() => onStartEdit(process, 'responsables')}
+        title="Clic para editar"
+      >
+        —
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className="responsables-cell"
+      onClick={() => onStartEdit(process, 'responsables')}
+      title="Clic para editar"
+    >
+      {nombres.map((nombre, i) => {
+        const style = colorForResponsable(nombre)
+        return (
+          <span
+            key={`${nombre}-${i}`}
+            className="responsable-chip"
+            style={{ background: style.bg, color: style.color }}
+          >
+            {nombre}
+          </span>
+        )
+      })}
     </span>
   )
 }
@@ -252,9 +348,8 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       case 'responsables':
         return (
           <td key={col.key} data-label={col.label}>
-            <TextCell
+            <ResponsablesCell
               process={process}
-              field="responsables"
               editCell={editCell}
               editValue={editValue}
               setEditValue={setEditValue}
@@ -298,10 +393,8 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       case 'tipo':
         return (
           <td key={col.key} data-label={col.label}>
-            <SelectCell
+            <TipoCell
               process={process}
-              field="tipo"
-              options={EDITABLE_FIELDS.tipo}
               editCell={editCell}
               editValue={editValue}
               setEditValue={setEditValue}

@@ -13,10 +13,18 @@ const MARGIN_SIDE = 32
 const MARGIN_TOP = 110 // deja espacio libre para la leyenda superior
 const MARGIN_BOTTOM = 32
 
-const RISK_FILL = '#7F1D1D'
-const RISK_STROKE = '#EF4444'
+// Gradación de rojo por Severidad — de claro a oscuro e intenso, para que
+// los tres niveles no se confundan entre sí a simple vista. El texto de la
+// burbuja cambia a oscuro en el nivel 1 porque el fondo claro no tiene
+// suficiente contraste con el texto claro que usan los niveles 2 y 3.
+const SEVERIDAD_COLOR = {
+  1: { fill: '#FCA5A5', stroke: '#F87171', text: '#7F1D1D' },
+  2: { fill: '#DC2626', stroke: '#991B1B', text: '#FEF2F2' },
+  3: { fill: '#7F1D1D', stroke: '#450A0A', text: '#FEF2F2' },
+}
 const NEUTRAL_FILL = '#1E2A50'
 const NEUTRAL_STROKE = '#3A4278'
+const NEUTRAL_TEXT = '#E2E8F0'
 const ARROW_COLOR = '#8B96AE'
 const ARROW_OPACITY = 0.35
 
@@ -25,10 +33,19 @@ function ordenValue(p) {
   return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n
 }
 
+function severidadNivel(d) {
+  const severidad = parseInt(d.severidad, 10)
+  return SEVERIDAD_COLOR[severidad] ? severidad : 1
+}
+
 function radiusOf(d) {
   if (!esAtencion(d.tipo)) return RADIUS
-  const severidad = parseInt(d.severidad, 10)
-  return SEVERIDAD_RADIUS[severidad] || SEVERIDAD_RADIUS[1]
+  return SEVERIDAD_RADIUS[severidadNivel(d)]
+}
+
+function colorsOf(d) {
+  if (!esAtencion(d.tipo)) return { fill: NEUTRAL_FILL, stroke: NEUTRAL_STROKE, text: NEUTRAL_TEXT }
+  return SEVERIDAD_COLOR[severidadNivel(d)]
 }
 
 export default function BubbleMap({ processes, onSelect, selectedId }) {
@@ -139,8 +156,8 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
       node
         .append('circle')
         .attr('r', d => radiusOf(d))
-        .attr('fill', d => (esAtencion(d.tipo) ? RISK_FILL : NEUTRAL_FILL))
-        .attr('stroke', d => (esAtencion(d.tipo) ? RISK_STROKE : NEUTRAL_STROKE))
+        .attr('fill', d => colorsOf(d).fill)
+        .attr('stroke', d => colorsOf(d).stroke)
         .attr('stroke-width', 1.5)
         .attr('opacity', 0.9)
 
@@ -159,7 +176,7 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
         const el = d3.select(this)
         const text = el.append('text')
           .attr('text-anchor', 'middle')
-          .attr('fill', '#E2E8F0')
+          .attr('fill', colorsOf(d).text)
           .attr('font-family', 'Lato, system-ui, sans-serif')
           .attr('font-size', '11px')
           .attr('font-weight', '700')

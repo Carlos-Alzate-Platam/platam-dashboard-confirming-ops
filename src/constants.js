@@ -56,7 +56,9 @@ export const COLUMNS_PROCESOS = [
 ]
 
 export const COLUMNS_PM = [
-  { key: 'ordenSecundario', label: 'Orden 02', width: '70px' },
+  // Encabezado visible como "Priorización" solo en esta vista; la columna
+  // real en Sheets sigue llamándose Orden_02 (no se toca la lectura/escritura).
+  { key: 'ordenSecundario', label: 'Priorización', width: '70px' },
   ...SHARED_COLUMNS,
 ]
 
@@ -100,4 +102,41 @@ export const ESTADO_STYLE = {
   'En diseño': { color: '#0FD6F5', bg: '#071E28' },
   Identificado: { color: '#0FD6F5', bg: '#071E28' },
   Bloqueado: { color: '#6B7280', bg: '#1A1E2A' },
+}
+
+// Rojo queda reservado exclusivamente para Tipo = Atención.
+export const TIPO_STYLE = {
+  Atención: { bg: '#EF4444', color: '#FFFFFF' },
+  Proceso: { bg: '#D1D5DB', color: '#1F2937' },
+}
+
+// Paleta de colores para chips de Responsables — nunca rojo (reservado para
+// riesgo/Atención). Cada nombre se asigna de forma determinística vía hash,
+// así el mismo responsable siempre recibe el mismo color.
+const RESPONSABLE_PALETTE = [
+  { bg: '#4AE54A', color: '#0A2410' },
+  { bg: '#FACC15', color: '#402B00' },
+  { bg: '#0FD6F5', color: '#062730' },
+  { bg: '#2ADBA4', color: '#062E24' },
+  { bg: '#A78BFA', color: '#2E1065' },
+  { bg: '#F472B6', color: '#500724' },
+  { bg: '#FB923C', color: '#431407' },
+  { bg: '#60A5FA', color: '#0B2545' },
+]
+
+export function parseResponsables(responsables) {
+  return (responsables || '')
+    .split(',')
+    .map(nombre => nombre.trim())
+    .filter(Boolean)
+}
+
+export function colorForResponsable(nombre) {
+  const key = normalizarTexto(nombre)
+  let hash = 0
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) | 0
+  }
+  const index = Math.abs(hash) % RESPONSABLE_PALETTE.length
+  return RESPONSABLE_PALETTE[index]
 }

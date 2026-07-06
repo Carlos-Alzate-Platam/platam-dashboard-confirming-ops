@@ -165,6 +165,7 @@ module.exports = async function handler(req, res) {
   const {
     nombre,
     tipo,
+    severidad = '',
     descripcion = '',
     responsables = '',
     naturaleza = '',
@@ -219,7 +220,7 @@ module.exports = async function handler(req, res) {
   try {
     appendResponse = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_TAB}!A:K`,
+      range: `${SHEET_TAB}!A:L`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
@@ -230,6 +231,7 @@ module.exports = async function handler(req, res) {
           '',
           nombre,
           tipo,
+          severidad,
           descripcion,
           responsables,
           naturaleza,
@@ -257,6 +259,7 @@ module.exports = async function handler(req, res) {
       ordenSecundario: '',
       nombre,
       tipo,
+      severidad,
       descripcion,
       responsables,
       naturaleza,
@@ -264,7 +267,6 @@ module.exports = async function handler(req, res) {
       tratamiento,
       estado,
       notas,
-      severidad: '',
     },
   })
 }
