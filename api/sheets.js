@@ -1,4 +1,5 @@
 const { google } = require('googleapis')
+const { isAuthenticated } = require('./_lib/session')
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_t64uj3iFNSNl-_SNGotD5bPb1a81QVA'
 const SHEET_TAB = process.env.SHEET_TAB || 'Seguimiento'
@@ -129,6 +130,10 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido', code: 'METHOD_NOT_ALLOWED' })
+  }
+
+  if (!isAuthenticated(req)) {
+    return res.status(401).json({ error: 'No autenticado.', code: 'UNAUTHENTICATED' })
   }
 
   let auth
