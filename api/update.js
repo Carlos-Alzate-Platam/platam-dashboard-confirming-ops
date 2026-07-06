@@ -5,12 +5,12 @@ const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_t64uj3iFNSNl-_SNGotD5bPb
 const SHEET_TAB = process.env.SHEET_TAB || 'Seguimiento'
 
 const FIELD_TO_COLUMN = {
-  tipo: 'C',
-  naturaleza: 'F',
-  tipoIntervencion: 'G',
-  tratamiento: 'H',
-  estado: 'I',
-  notas: 'J',
+  tipo: 'D',
+  naturaleza: 'G',
+  tipoIntervencion: 'H',
+  tratamiento: 'I',
+  estado: 'J',
+  notas: 'K',
 }
 
 function apiError(statusCode, code, error, detail) {

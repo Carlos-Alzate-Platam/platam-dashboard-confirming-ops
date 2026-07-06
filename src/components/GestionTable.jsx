@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
-import { COLUMNS, EDITABLE_FIELDS, esRiesgo, ESTADO_STYLE } from '../constants'
+import { EDITABLE_FIELDS, esRiesgo, ESTADO_STYLE } from '../constants'
+
+const NUMERIC_SORT_KEYS = ['orden', 'ordenSecundario']
 
 function SortIcon({ columnKey, sortKey, sortDir }) {
   if (sortKey !== columnKey) {
@@ -104,8 +106,8 @@ function NotasCell({ process, editCell, editValue, setEditValue, onStartEdit, on
   )
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew }) {
-  const [sortKey, setSortKey] = useState('orden')
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey }) {
+  const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
@@ -117,7 +119,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
       let aVal = a[sortKey] ?? ''
       let bVal = b[sortKey] ?? ''
 
-      if (sortKey === 'orden') {
+      if (NUMERIC_SORT_KEYS.includes(sortKey)) {
         const aNum = parseInt(aVal)
         const bNum = parseInt(bVal)
         if (!isNaN(aNum) && !isNaN(bNum)) {
@@ -168,6 +170,8 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
     switch (col.key) {
       case 'orden':
         return <td key={col.key} data-label={col.label} className="cell-priority">{process.orden || '—'}</td>
+      case 'ordenSecundario':
+        return <td key={col.key} data-label={col.label} className="cell-priority">{process.ordenSecundario || '—'}</td>
       case 'nombre':
         return <td key={col.key} data-label={col.label} className="cell-name">{process.nombre || '—'}</td>
       case 'descripcion':
@@ -281,7 +285,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
       <table className="process-table">
         <thead>
           <tr>
-            {COLUMNS.map(col => (
+            {columns.map(col => (
               <th
                 key={col.key}
                 style={{ minWidth: col.width }}
@@ -296,7 +300,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
         <tbody>
           {sorted.map(p => (
             <tr key={p.sheetRow}>
-              {COLUMNS.map(col => renderCell(p, col))}
+              {columns.map(col => renderCell(p, col))}
             </tr>
           ))}
         </tbody>

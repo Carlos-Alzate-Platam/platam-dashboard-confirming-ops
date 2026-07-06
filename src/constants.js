@@ -35,8 +35,9 @@ export const TIPO_PROCESO = [
   'Atención',
 ]
 
-export const COLUMNS = [
-  { key: 'orden', label: 'Orden', width: '70px' },
+// Columnas compartidas por ambas vistas de tabla; solo cambia cuál de las
+// dos columnas de orden va primero (Orden en Procesos, Orden_02 en PM).
+const SHARED_COLUMNS = [
   { key: 'nombre', label: 'Nombre', width: '160px' },
   { key: 'tipo', label: 'Tipo', width: '110px' },
   { key: 'descripcion', label: 'Descripción', width: '240px' },
@@ -46,6 +47,16 @@ export const COLUMNS = [
   { key: 'tratamiento', label: 'Tratamiento', width: '130px' },
   { key: 'estado', label: 'Estado', width: '140px' },
   { key: 'notas', label: 'Notas', width: '220px' },
+]
+
+export const COLUMNS_PROCESOS = [
+  { key: 'orden', label: 'Orden', width: '70px' },
+  ...SHARED_COLUMNS,
+]
+
+export const COLUMNS_PM = [
+  { key: 'ordenSecundario', label: 'Orden 02', width: '70px' },
+  ...SHARED_COLUMNS,
 ]
 
 // Campos editables desde el dashboard, con dropdown de opciones fijas cuando aplica.

@@ -5,6 +5,7 @@ import GestionTable from './components/GestionTable'
 import BubbleMap from './components/BubbleMap'
 import ProcessPanel from './components/ProcessPanel'
 import NewProcessModal from './components/NewProcessModal'
+import { COLUMNS_PROCESOS, COLUMNS_PM } from './constants'
 
 export default function App() {
   const { processes, loading, error, retry, updateCell, createProcess } = useSheets()
@@ -69,6 +70,8 @@ export default function App() {
                 processes={processes}
                 onUpdate={updateCell}
                 onAddNew={() => openNewProcessModal('Proceso')}
+                columns={COLUMNS_PROCESOS}
+                defaultSortKey="orden"
               />
             )}
 
@@ -77,6 +80,8 @@ export default function App() {
                 processes={pmProcesses}
                 onUpdate={updateCell}
                 onAddNew={() => openNewProcessModal('Atención')}
+                columns={COLUMNS_PM}
+                defaultSortKey="ordenSecundario"
               />
             )}
 

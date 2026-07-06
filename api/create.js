@@ -219,12 +219,15 @@ module.exports = async function handler(req, res) {
   try {
     appendResponse = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_TAB}!A:J`,
+      range: `${SHEET_TAB}!A:K`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
+        // Orden_02 (prioridad de Project Manager) se deja vacío: se asigna
+        // manualmente después, solo para los procesos que lo necesitan.
         values: [[
           nextOrden,
+          '',
           nombre,
           tipo,
           descripcion,
@@ -241,7 +244,7 @@ module.exports = async function handler(req, res) {
     return sendError(res, classifyGoogleError(err))
   }
 
-  // updatedRange llega como "Seguimiento!A15:J15" — extraemos el número de fila.
+  // updatedRange llega como "Seguimiento!A15:K15" — extraemos el número de fila.
   const updatedRange = appendResponse.data.updates?.updatedRange || ''
   const match = updatedRange.match(/!A(\d+)/)
   const sheetRow = match ? parseInt(match[1], 10) : null
@@ -251,6 +254,7 @@ module.exports = async function handler(req, res) {
     process: {
       sheetRow,
       orden: String(nextOrden),
+      ordenSecundario: '',
       nombre,
       tipo,
       descripcion,

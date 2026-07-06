@@ -148,7 +148,7 @@ module.exports = async function handler(req, res) {
     const sheets = google.sheets({ version: 'v4', auth })
     response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_TAB}!A:J`,
+      range: `${SHEET_TAB}!A:K`,
     })
   } catch (err) {
     return sendError(res, classifyGoogleError(err))
@@ -158,22 +158,24 @@ module.exports = async function handler(req, res) {
   if (rows.length < 2) return res.json([])
 
   // rows[0] es el encabezado; rows[i] para i>=1 es dato en sheet row i+1
-  // Columnas: A Orden, B Nombre, C Tipo, D Descripción, E Responsables,
-  // F Naturaleza, G Tipo Intervención, H Tratamiento, I Estado, J Notas
+  // Columnas: A Orden, B Orden_02, C Nombre, D Tipo, E Descripción,
+  // F Responsables, G Naturaleza, H Tipo Intervención, I Tratamiento,
+  // J Estado, K Notas
   const processes = rows
     .slice(1)
     .map((row, i) => ({
       sheetRow: i + 2, // fila real en Sheets (1-indexed, +1 por encabezado)
       orden: row[0] || '',
-      nombre: row[1] || '',
-      tipo: row[2] || '',
-      descripcion: row[3] || '',
-      responsables: row[4] || '',
-      naturaleza: row[5] || '',
-      tipoIntervencion: row[6] || '',
-      tratamiento: row[7] || '',
-      estado: row[8] || '',
-      notas: row[9] || '',
+      ordenSecundario: row[1] || '',
+      nombre: row[2] || '',
+      tipo: row[3] || '',
+      descripcion: row[4] || '',
+      responsables: row[5] || '',
+      naturaleza: row[6] || '',
+      tipoIntervencion: row[7] || '',
+      tratamiento: row[8] || '',
+      estado: row[9] || '',
+      notas: row[10] || '',
     }))
     .filter(p => p.nombre || p.descripcion)
 
