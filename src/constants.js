@@ -62,8 +62,16 @@ export function esRiesgo(naturaleza) {
   return Boolean(naturaleza && naturaleza.trim())
 }
 
+function normalizarTexto(str) {
+  return str
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(new RegExp('[\\u0300-\\u036f]', 'g'), '') // quita diacríticos (acentos) tras normalize('NFD')
+}
+
 export function esAtencion(tipo) {
-  return tipo === 'Atención'
+  return Boolean(tipo) && normalizarTexto(tipo) === 'atencion'
 }
 
 export const ESTADO_STYLE = {

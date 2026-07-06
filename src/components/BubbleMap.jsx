@@ -5,16 +5,24 @@ import { esAtencion } from '../constants'
 const RADIUS = 44
 const RADIUS_ATENCION = RADIUS * 1.4
 const GAP = 24
-const MARGIN = 32
+const MARGIN_SIDE = 32
+const MARGIN_TOP = 110 // deja espacio libre para la leyenda superior
+const MARGIN_BOTTOM = 32
 
 const RISK_FILL = '#7F1D1D'
 const RISK_STROKE = '#EF4444'
 const NEUTRAL_FILL = '#1E2A50'
 const NEUTRAL_STROKE = '#3A4278'
+const ARROW_COLOR = '#8B96AE'
+const ARROW_OPACITY = 0.35
 
 function ordenValue(p) {
   const n = parseInt(p.orden, 10)
   return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n
+}
+
+function radiusOf(d) {
+  return esAtencion(d.tipo) ? RADIUS_ATENCION : RADIUS
 }
 
 export default function BubbleMap({ processes, onSelect, selectedId }) {
@@ -32,25 +40,72 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
     const containerHeight = svgRef.current.parentElement.clientHeight || 600
 
     const cellSize = RADIUS_ATENCION * 2 + GAP
-    const cols = Math.max(1, Math.floor((containerWidth - MARGIN * 2) / cellSize))
+    const cols = Math.max(1, Math.floor((containerWidth - MARGIN_SIDE * 2) / cellSize))
 
     const nodes = [...processes]
       .sort((a, b) => ordenValue(a) - ordenValue(b))
-      .map((p, i) => ({
-        ...p,
-        col: i % cols,
-        row: Math.floor(i / cols),
-      }))
+      .map((p, i) => {
+        const col = i % cols
+        const row = Math.floor(i / cols)
+        return {
+          ...p,
+          col,
+          row,
+          x: MARGIN_SIDE + cellSize / 2 + col * cellSize,
+          y: MARGIN_TOP + cellSize / 2 + row * cellSize,
+        }
+      })
 
     const rows = Math.max(1, Math.ceil(nodes.length / cols))
-    const contentHeight = rows * cellSize + MARGIN * 2
+    const contentHeight = MARGIN_TOP + rows * cellSize + MARGIN_BOTTOM
     const svgHeight = Math.max(containerHeight, contentHeight)
 
     svg
       .attr('width', containerWidth)
       .style('height', `${svgHeight}px`)
 
+    const defs = svg.append('defs')
+    defs.append('marker')
+      .attr('id', 'sequence-arrow')
+      .attr('viewBox', '0 0 10 10')
+      .attr('refX', 8)
+      .attr('refY', 5)
+      .attr('markerWidth', 5)
+      .attr('markerHeight', 5)
+      .attr('orient', 'auto-start-reverse')
+      .append('path')
+      .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+      .attr('fill', ARROW_COLOR)
+      .attr('fill-opacity', ARROW_OPACITY)
+
     const g = svg.append('g')
+
+    // Flechas de secuencia (Orden N -> Orden N+1), dibujadas debajo de las burbujas
+    const arrows = g.append('g').attr('class', 'sequence-arrows')
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const a = nodes[i]
+      const b = nodes[i + 1]
+      const dx = b.x - a.x
+      const dy = b.y - a.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (!dist) continue
+
+      const ux = dx / dist
+      const uy = dy / dist
+      const startOffset = radiusOf(a) + 3
+      const endOffset = radiusOf(b) + 10
+
+      arrows
+        .append('line')
+        .attr('x1', a.x + ux * startOffset)
+        .attr('y1', a.y + uy * startOffset)
+        .attr('x2', b.x - ux * endOffset)
+        .attr('y2', b.y - uy * endOffset)
+        .attr('stroke', ARROW_COLOR)
+        .attr('stroke-opacity', ARROW_OPACITY)
+        .attr('stroke-width', 1.5)
+        .attr('marker-end', 'url(#sequence-arrow)')
+    }
 
     const node = g
       .selectAll('g.bubble')
@@ -58,11 +113,7 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
       .join('g')
       .attr('class', 'bubble')
       .style('cursor', 'pointer')
-      .attr('transform', d => {
-        const x = MARGIN + cellSize / 2 + d.col * cellSize
-        const y = MARGIN + cellSize / 2 + d.row * cellSize
-        return `translate(${x},${y})`
-      })
+      .attr('transform', d => `translate(${d.x},${d.y})`)
       .on('click', (event, d) => {
         event.stopPropagation()
         onSelectRef.current(d)
