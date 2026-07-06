@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import { esAtencion } from '../constants'
+import { esAtencion, parseResponsables, colorForResponsable } from '../constants'
 
 const RADIUS = 44
 // Tamaño por Severidad (1/2/3) para procesos de Atención. Los saltos son
@@ -27,6 +27,14 @@ const NEUTRAL_STROKE = '#3A4278'
 const NEUTRAL_TEXT = '#E2E8F0'
 const ARROW_COLOR = '#8B96AE'
 const ARROW_OPACITY = 0.35
+
+// Etiqueta de Responsables encima de la burbuja. Tamaño de fuente fijo y
+// pequeño (no escala con el radio) para que quepa incluso en la burbuja
+// más chica; el límite de caracteres es una heurística simple, igual a la
+// que ya usa el label de Nombre más abajo.
+const RESPONSABLE_FONT_SIZE = '9px'
+const RESPONSABLE_MAX_CHARS = 12
+const RESPONSABLE_SEPARATOR_COLOR = '#8B96AE'
 
 function ordenValue(p) {
   const n = parseInt(p.orden, 10)
@@ -195,6 +203,49 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
           text.append('tspan').attr('x', 0).attr('dy', '1.3em').text(
             line2.length > 14 ? line2.slice(0, 13) + '…' : line2
           )
+        }
+      })
+
+      // Etiqueta de Responsables encima de la burbuja — mismo color que ya
+      // se le asigna a cada persona en los chips de Responsables de las
+      // tablas (colorForResponsable), para que el color sea consistente en
+      // todo el dashboard, no uno nuevo inventado acá.
+      node.each(function(d) {
+        const nombres = parseResponsables(d.responsables)
+        if (!nombres.length) return
+
+        const visible = []
+        let used = 0
+        for (const nombre of nombres) {
+          const addLen = nombre.length + (visible.length ? 2 : 0) // ", "
+          if (visible.length && used + addLen > RESPONSABLE_MAX_CHARS) break
+          visible.push(nombre)
+          used += addLen
+        }
+        const hiddenCount = nombres.length - visible.length
+
+        const el = d3.select(this)
+        const text = el.append('text')
+          .attr('text-anchor', 'middle')
+          .attr('y', -(radiusOf(d) + 4))
+          .attr('font-family', 'Lato, system-ui, sans-serif')
+          .attr('font-size', RESPONSABLE_FONT_SIZE)
+          .attr('font-weight', '700')
+          .attr('pointer-events', 'none')
+
+        visible.forEach((nombre, i) => {
+          if (i > 0) {
+            text.append('tspan').attr('fill', RESPONSABLE_SEPARATOR_COLOR).text(', ')
+          }
+          const soloUno = visible.length === 1 && hiddenCount === 0
+          const display = soloUno && nombre.length > RESPONSABLE_MAX_CHARS
+            ? nombre.slice(0, RESPONSABLE_MAX_CHARS - 1) + '…'
+            : nombre
+          text.append('tspan').attr('fill', colorForResponsable(nombre).bg).text(display)
+        })
+
+        if (hiddenCount > 0) {
+          text.append('tspan').attr('fill', RESPONSABLE_SEPARATOR_COLOR).text(` +${hiddenCount}`)
         }
       })
 
