@@ -167,20 +167,20 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
   function renderCell(process, col) {
     switch (col.key) {
       case 'orden':
-        return <td key={col.key} className="cell-priority">{process.orden || '—'}</td>
+        return <td key={col.key} data-label={col.label} className="cell-priority">{process.orden || '—'}</td>
       case 'nombre':
-        return <td key={col.key} className="cell-name">{process.nombre || '—'}</td>
+        return <td key={col.key} data-label={col.label} className="cell-name">{process.nombre || '—'}</td>
       case 'descripcion':
         return (
-          <td key={col.key}>
+          <td key={col.key} data-label={col.label}>
             <span className="cell-desc" title={process.descripcion}>{process.descripcion || '—'}</span>
           </td>
         )
       case 'responsables':
-        return <td key={col.key}>{process.responsables || '—'}</td>
+        return <td key={col.key} data-label={col.label}>{process.responsables || '—'}</td>
       case 'naturaleza':
         return (
-          <td key={col.key}>
+          <td key={col.key} data-label={col.label}>
             <SelectCell
               process={process}
               field="naturaleza"
@@ -196,7 +196,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
         )
       case 'tipoIntervencion':
         return (
-          <td key={col.key}>
+          <td key={col.key} data-label={col.label}>
             <SelectCell
               process={process}
               field="tipoIntervencion"
@@ -211,7 +211,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
         )
       case 'tipo':
         return (
-          <td key={col.key}>
+          <td key={col.key} data-label={col.label}>
             <SelectCell
               process={process}
               field="tipo"
@@ -226,7 +226,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
         )
       case 'tratamiento':
         return (
-          <td key={col.key}>
+          <td key={col.key} data-label={col.label}>
             <SelectCell
               process={process}
               field="tratamiento"
@@ -241,7 +241,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
         )
       case 'estado':
         return (
-          <td key={col.key}>
+          <td key={col.key} data-label={col.label}>
             <EstadoCell
               process={process}
               editCell={editCell}
@@ -254,7 +254,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
         )
       case 'notas':
         return (
-          <td key={col.key}>
+          <td key={col.key} data-label={col.label}>
             <NotasCell
               process={process}
               editCell={editCell}
@@ -267,7 +267,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
           </td>
         )
       default:
-        return <td key={col.key}>{process[col.key] || '—'}</td>
+        return <td key={col.key} data-label={col.label}>{process[col.key] || '—'}</td>
     }
   }
 
@@ -277,6 +277,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew }) {
         {saving ? <p className="saving-indicator">Guardando en Sheets...</p> : <span />}
         <button className="add-process-btn" onClick={onAddNew}>+ Nuevo proceso</button>
       </div>
+      <p className="table-scroll-hint">Desliza horizontalmente para ver todas las columnas →</p>
       <table className="process-table">
         <thead>
           <tr>

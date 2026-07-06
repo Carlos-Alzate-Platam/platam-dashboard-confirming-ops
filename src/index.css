@@ -159,6 +159,22 @@ html, body, #root {
   padding: 24px;
 }
 
+/* Aviso de que la tabla tiene más columnas que las visibles; solo se
+   muestra en el rango donde la tabla sigue siendo tabla (ver breakpoints
+   de tarjetas más abajo) y no cabe completa en el ancho disponible. */
+.table-scroll-hint {
+  display: none;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+@media (min-width: 641px) and (max-width: 1180px) {
+  .table-scroll-hint {
+    display: block;
+  }
+}
+
 .process-table {
   width: 100%;
   border-collapse: collapse;
@@ -407,6 +423,7 @@ html, body, #root {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
+  font-family: inherit;
   font-size: 18px;
   line-height: 1;
   flex-shrink: 0;
@@ -650,4 +667,131 @@ html, body, #root {
 .btn-secondary:hover {
   border-color: var(--text-dim);
   color: var(--text);
+}
+
+/* ==========================================================================
+   Responsive — tablets y teléfonos
+   ========================================================================== */
+
+/* Header y navegación: se apilan en dos filas para que el logo y las tres
+   pestañas quepan sin recortarse ni volverse ilegibles. */
+@media (max-width: 860px) {
+  .header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .header-logo-img {
+    height: 20px;
+  }
+
+  .nav-tabs {
+    width: 100%;
+    height: auto;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .nav-tab {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 12px;
+    text-align: center;
+    white-space: normal;
+    border-bottom-width: 3px;
+  }
+}
+
+/* Panel de detalle: pantalla completa en vez de columna lateral angosta */
+@media (max-width: 640px) {
+  .process-panel {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    z-index: 20;
+    border-left: none;
+  }
+}
+
+/* Modal de nuevo proceso: aprovecha todo el ancho disponible */
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 12px;
+  }
+}
+
+/* Tabla de gestión: de tabla con scroll horizontal a tarjetas apiladas */
+@media (max-width: 640px) {
+  .table-wrapper {
+    padding: 14px;
+  }
+
+  .add-process-btn {
+    padding: 9px 16px;
+    font-size: 14px;
+  }
+
+  .table-scroll-hint {
+    display: none;
+  }
+
+  .process-table {
+    min-width: 0;
+  }
+
+  .process-table thead {
+    display: none;
+  }
+
+  .process-table,
+  .process-table tbody,
+  .process-table tr,
+  .process-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .process-table tr {
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 14px;
+    background: var(--surface);
+  }
+
+  .process-table td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .process-table td:last-child {
+    border-bottom: none;
+  }
+
+  .process-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+  }
+
+  .cell-desc,
+  .cell-notas {
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .edit-select,
+  .edit-textarea {
+    font-size: 14px;
+  }
 }
