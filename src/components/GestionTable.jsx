@@ -310,6 +310,21 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
             />
           </td>
         )
+      case 'severidad':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <SelectCell
+              process={process}
+              field="severidad"
+              options={EDITABLE_FIELDS.severidad}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
       case 'tratamiento':
         return (
           <td key={col.key} data-label={col.label}>

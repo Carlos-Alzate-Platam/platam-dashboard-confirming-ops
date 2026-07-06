@@ -40,6 +40,7 @@ export const TIPO_PROCESO = [
 const SHARED_COLUMNS = [
   { key: 'nombre', label: 'Nombre', width: '160px' },
   { key: 'tipo', label: 'Tipo', width: '110px' },
+  { key: 'severidad', label: 'Severidad', width: '110px' },
   { key: 'descripcion', label: 'Descripción', width: '240px' },
   { key: 'responsables', label: 'Responsables', width: '130px' },
   { key: 'naturaleza', label: 'Naturaleza', width: '180px' },
@@ -66,6 +67,7 @@ export const EDITABLE_FIELDS = {
   ordenSecundario: null, // número libre, sin validar unicidad
   nombre: null,
   tipo: TIPO_PROCESO,
+  severidad: ['', '1', '2', '3'], // solo aplica a Tipo = "Atención"; vacío para "Proceso"
   descripcion: null,
   responsables: null,
   naturaleza: ['', ...NATURALEZA_RIESGO],

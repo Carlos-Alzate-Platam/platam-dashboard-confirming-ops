@@ -16,6 +16,7 @@ const FIELD_TO_COLUMN = {
   tratamiento: 'I',
   estado: 'J',
   notas: 'K',
+  severidad: 'L',
 }
 
 function apiError(statusCode, code, error, detail) {

@@ -3,7 +3,11 @@ import * as d3 from 'd3'
 import { esAtencion } from '../constants'
 
 const RADIUS = 44
-const RADIUS_ATENCION = RADIUS * 1.4
+// Tamaño por Severidad (1/2/3) para procesos de Atención. Los saltos son
+// deliberadamente grandes para que la diferencia sea evidente a simple
+// vista, no sutil. Severidad ausente o inválida cae al nivel 1.
+const SEVERIDAD_RADIUS = { 1: 58, 2: 76, 3: 96 }
+const RADIUS_ATENCION_MAX = Math.max(...Object.values(SEVERIDAD_RADIUS))
 const GAP = 24
 const MARGIN_SIDE = 32
 const MARGIN_TOP = 110 // deja espacio libre para la leyenda superior
@@ -22,7 +26,9 @@ function ordenValue(p) {
 }
 
 function radiusOf(d) {
-  return esAtencion(d.tipo) ? RADIUS_ATENCION : RADIUS
+  if (!esAtencion(d.tipo)) return RADIUS
+  const severidad = parseInt(d.severidad, 10)
+  return SEVERIDAD_RADIUS[severidad] || SEVERIDAD_RADIUS[1]
 }
 
 export default function BubbleMap({ processes, onSelect, selectedId }) {
@@ -50,7 +56,7 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
       const containerWidth = container.clientWidth || 800
       const containerHeight = container.clientHeight || 600
 
-      const cellSize = RADIUS_ATENCION * 2 + GAP
+      const cellSize = RADIUS_ATENCION_MAX * 2 + GAP
       const cols = Math.max(1, Math.floor((containerWidth - MARGIN_SIDE * 2) / cellSize))
 
       const nodes = [...processes]
@@ -132,7 +138,7 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
 
       node
         .append('circle')
-        .attr('r', d => (esAtencion(d.tipo) ? RADIUS_ATENCION : RADIUS))
+        .attr('r', d => radiusOf(d))
         .attr('fill', d => (esAtencion(d.tipo) ? RISK_FILL : NEUTRAL_FILL))
         .attr('stroke', d => (esAtencion(d.tipo) ? RISK_STROKE : NEUTRAL_STROKE))
         .attr('stroke-width', 1.5)
@@ -179,7 +185,7 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
       node
         .append('circle')
         .attr('class', 'selection-ring')
-        .attr('r', d => (esAtencion(d.tipo) ? RADIUS_ATENCION + 5 : RADIUS + 5))
+        .attr('r', d => radiusOf(d) + 5)
         .attr('fill', 'none')
         .attr('stroke', '#0FD6F5')
         .attr('stroke-width', 2)
