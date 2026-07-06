@@ -8,7 +8,7 @@ import NewProcessModal from './components/NewProcessModal'
 import { COLUMNS_PROCESOS, COLUMNS_PM } from './constants'
 
 export default function App() {
-  const { processes, loading, error, retry, updateCell, createProcess } = useSheets()
+  const { processes, loading, error, retry, updateCell, batchUpdateCells, createProcess } = useSheets()
   const [activeTab, setActiveTab] = useState('procesos')
   const [selectedProcess, setSelectedProcess] = useState(null)
   const [newProcessDefaultTipo, setNewProcessDefaultTipo] = useState(null)
@@ -82,6 +82,8 @@ export default function App() {
                 onAddNew={() => openNewProcessModal('Atención')}
                 columns={COLUMNS_PM}
                 defaultSortKey="ordenSecundario"
+                enableDragReorder
+                onReorder={batchUpdateCells}
               />
             )}
 

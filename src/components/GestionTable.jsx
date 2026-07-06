@@ -1,4 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   EDITABLE_FIELDS,
   esRiesgo,
@@ -9,6 +12,60 @@ import {
 } from '../constants'
 
 const NUMERIC_SORT_KEYS = ['orden', 'ordenSecundario']
+
+// Ancho de la columna del ícono de agarre (drag handle) — solo se usa en
+// la vista Project manager cuando enableDragReorder está activo.
+const DRAG_HANDLE_WIDTH = 36
+
+function DragHandle({ attributes, listeners }) {
+  return (
+    <button
+      type="button"
+      className="drag-handle"
+      aria-label="Arrastrar para reordenar"
+      {...attributes}
+      {...listeners}
+    >
+      <svg width="12" height="18" viewBox="0 0 12 18" fill="none" aria-hidden="true">
+        <circle cx="3" cy="3" r="1.5" fill="currentColor" />
+        <circle cx="9" cy="3" r="1.5" fill="currentColor" />
+        <circle cx="3" cy="9" r="1.5" fill="currentColor" />
+        <circle cx="9" cy="9" r="1.5" fill="currentColor" />
+        <circle cx="3" cy="15" r="1.5" fill="currentColor" />
+        <circle cx="9" cy="15" r="1.5" fill="currentColor" />
+      </svg>
+    </button>
+  )
+}
+
+// Fila arrastrable para Project manager. Reutiliza exactamente el mismo
+// renderCell que la fila estática — solo agrega el <tr> "sortable" de
+// dnd-kit y la celda del drag handle a la izquierda.
+function SortableRow({ process, columns, renderCell }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: process.sheetRow,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 2 : undefined,
+    position: isDragging ? 'relative' : undefined,
+  }
+
+  return (
+    <tr ref={setNodeRef} style={style}>
+      <td
+        className="drag-handle-cell sticky-col"
+        style={{ left: 0, width: DRAG_HANDLE_WIDTH, minWidth: DRAG_HANDLE_WIDTH, maxWidth: DRAG_HANDLE_WIDTH }}
+      >
+        <DragHandle attributes={attributes} listeners={listeners} />
+      </td>
+      {columns.map(col => renderCell(process, col))}
+    </tr>
+  )
+}
 
 function SortIcon({ columnKey, sortKey, sortDir }) {
   if (sortKey !== columnKey) {
@@ -235,9 +292,11 @@ function TextCell({
 // Offset acumulado (izquierda) de cada columna fija, sumando solo el ancho
 // de las columnas fijas anteriores — las columnas no fijas de por medio
 // (ej. Severidad) simplemente se deslizan por debajo al hacer scroll.
-function useStickyOffsets(columns) {
+// `baseOffset` desplaza todo el cálculo cuando hay una columna adicional
+// (el drag handle de Project manager) antes de las columnas fijas normales.
+function useStickyOffsets(columns, baseOffset) {
   return useMemo(() => {
-    let offset = 0
+    let offset = baseOffset || 0
     const map = {}
     for (const col of columns) {
       if (!col.sticky) continue
@@ -245,16 +304,17 @@ function useStickyOffsets(columns) {
       offset += parseInt(col.width, 10) || 0
     }
     return map
-  }, [columns])
+  }, [columns, baseOffset])
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey }) {
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [saving, setSaving] = useState(false)
-  const stickyOffsets = useStickyOffsets(columns)
+  const stickyOffsets = useStickyOffsets(columns, enableDragReorder ? DRAG_HANDLE_WIDTH : 0)
+  const dragSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   function stickyStyle(col) {
     if (!col.sticky) return undefined
@@ -274,9 +334,15 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       if (NUMERIC_SORT_KEYS.includes(sortKey)) {
         const aNum = parseInt(aVal)
         const bNum = parseInt(bVal)
-        if (!isNaN(aNum) && !isNaN(bNum)) {
-          return sortDir === 'asc' ? aNum - bNum : bNum - aNum
-        }
+        const aEmpty = isNaN(aNum)
+        const bEmpty = isNaN(bNum)
+        // Las celdas vacías (ej. Priorización sin asignar) siempre van al
+        // final, sin importar la dirección del orden — no se mezclan con
+        // los valores numéricos.
+        if (aEmpty && bEmpty) return 0
+        if (aEmpty) return 1
+        if (bEmpty) return -1
+        return sortDir === 'asc' ? aNum - bNum : bNum - aNum
       }
 
       const cmp = String(aVal).localeCompare(String(bVal), 'es', { sensitivity: 'base' })
@@ -316,6 +382,43 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
   function handleCancel() {
     setEditCell(null)
     setEditValue('')
+  }
+
+  // Solo se usa cuando enableDragReorder está activo (Project manager).
+  // Recalcula Priorización de forma secuencial (1, 2, 3...) únicamente para
+  // las filas entre la posición de origen y la de destino — el resto de la
+  // lista, incluidas las filas sin Priorización asignada que quedan al
+  // final, no se toca.
+  async function handleDragEnd(event) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = sorted.findIndex(p => p.sheetRow === active.id)
+    const newIndex = sorted.findIndex(p => p.sheetRow === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(sorted, oldIndex, newIndex)
+    const lo = Math.min(oldIndex, newIndex)
+    const hi = Math.max(oldIndex, newIndex)
+
+    const changes = []
+    for (let i = lo; i <= hi; i++) {
+      const proc = reordered[i]
+      const value = String(i + 1)
+      if ((proc.ordenSecundario || '') !== value) {
+        changes.push({ sheetRow: proc.sheetRow, field: 'ordenSecundario', value })
+      }
+    }
+    if (!changes.length) return
+
+    setSaving(true)
+    try {
+      await onReorder(changes)
+    } catch (err) {
+      console.error('Error al reordenar:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   function renderCell(process, col) {
@@ -507,6 +610,13 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       <table className="process-table">
         <thead>
           <tr>
+            {enableDragReorder && (
+              <th
+                className="sticky-col drag-handle-header"
+                style={{ left: 0, width: DRAG_HANDLE_WIDTH, minWidth: DRAG_HANDLE_WIDTH, maxWidth: DRAG_HANDLE_WIDTH }}
+                aria-label="Reordenar"
+              />
+            )}
             {columns.map(col => (
               <th
                 key={col.key}
@@ -520,13 +630,25 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
             ))}
           </tr>
         </thead>
-        <tbody>
-          {sorted.map(p => (
-            <tr key={p.sheetRow}>
-              {columns.map(col => renderCell(p, col))}
-            </tr>
-          ))}
-        </tbody>
+        {enableDragReorder ? (
+          <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sorted.map(p => p.sheetRow)} strategy={verticalListSortingStrategy}>
+              <tbody>
+                {sorted.map(p => (
+                  <SortableRow key={p.sheetRow} process={p} columns={columns} renderCell={renderCell} />
+                ))}
+              </tbody>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <tbody>
+            {sorted.map(p => (
+              <tr key={p.sheetRow}>
+                {columns.map(col => renderCell(p, col))}
+              </tr>
+            ))}
+          </tbody>
+        )}
       </table>
     </div>
   )

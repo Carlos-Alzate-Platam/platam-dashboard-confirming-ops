@@ -76,6 +76,43 @@ export function useSheets() {
     }
   }, [fetchProcesses])
 
+  // Aplica varios cambios de una sola vez (ej. reordenar por drag & drop en
+  // Project manager) con una sola llamada batch a Sheets. Optimista: aplica
+  // los cambios en memoria antes de llamar a la API y, si falla, revierte
+  // exactamente al estado previo a la operación.
+  const batchUpdateCells = useCallback(async (updates) => {
+    if (!updates || !updates.length) return
+
+    let previous
+    setProcesses(prev => {
+      previous = prev
+      const byRow = new Map(updates.map(u => [u.sheetRow, u]))
+      return prev.map(p => {
+        const change = byRow.get(p.sheetRow)
+        return change ? { ...p, [change.field]: change.value } : p
+      })
+    })
+
+    let res
+    try {
+      res = await fetch('/api/batch-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      })
+    } catch (networkErr) {
+      console.error('[Platam API] Error de red al llamar /api/batch-update:', networkErr)
+      setProcesses(previous)
+      throw new Error('No se pudo conectar con el servidor al intentar guardar el nuevo orden.')
+    }
+
+    if (!res.ok) {
+      const err = await extractApiError(res)
+      setProcesses(previous)
+      throw err
+    }
+  }, [])
+
   const createProcess = useCallback(async (fields) => {
     let res
     try {
@@ -96,5 +133,5 @@ export function useSheets() {
     return process
   }, [])
 
-  return { processes, loading, error, retry: fetchProcesses, updateCell, createProcess }
+  return { processes, loading, error, retry: fetchProcesses, updateCell, batchUpdateCells, createProcess }
 }
