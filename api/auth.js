@@ -1,4 +1,4 @@
-const { isAuthenticated, buildSessionCookie } = require('./_lib/session')
+const { isAuthenticated, buildSessionCookie, buildClearCookie } = require('./_lib/session')
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
@@ -27,6 +27,11 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'GET') {
     return res.json({ authenticated: isAuthenticated(req) })
+  }
+
+  if (req.method === 'DELETE') {
+    res.setHeader('Set-Cookie', buildClearCookie())
+    return res.json({ ok: true })
   }
 
   if (req.method === 'POST') {

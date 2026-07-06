@@ -31,6 +31,14 @@ export default function App() {
     setNewProcessDefaultTipo(null)
   }
 
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth', { method: 'DELETE' })
+    } finally {
+      window.location.reload()
+    }
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -40,6 +48,7 @@ export default function App() {
           alt="Platam Confirming"
         />
         <NavTabs active={activeTab} onChange={handleTabChange} />
+        <button className="logout-btn" onClick={handleLogout}>Cerrar sesión</button>
       </header>
 
       <main className="main">

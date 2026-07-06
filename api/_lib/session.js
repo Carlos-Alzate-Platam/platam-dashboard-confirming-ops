@@ -33,6 +33,13 @@ function buildSessionCookie() {
   return `${COOKIE_NAME}=${token}; Path=/; Max-Age=${SESSION_DURATION_MS / 1000}; HttpOnly; Secure; SameSite=Lax`
 }
 
+// Mismos atributos que buildSessionCookie (para que el navegador la
+// reconozca como la misma cookie) pero con Max-Age=0, lo que le indica
+// que la borre de inmediato.
+function buildClearCookie() {
+  return `${COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`
+}
+
 function isValidToken(token) {
   const secret = getSecret()
   if (!token || !secret) return false
@@ -63,6 +70,7 @@ module.exports = {
   SESSION_DURATION_MS,
   parseCookies,
   buildSessionCookie,
+  buildClearCookie,
   isValidToken,
   isAuthenticated,
 }
