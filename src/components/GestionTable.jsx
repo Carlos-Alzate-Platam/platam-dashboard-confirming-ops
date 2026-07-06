@@ -78,30 +78,60 @@ function SelectCell({ process, field, options, extraClass, editCell, editValue, 
   )
 }
 
-function NotasCell({ process, editCell, editValue, setEditValue, onStartEdit, onSave, onCancel }) {
+// Campo de texto libre (una línea o textarea) o numérico sin dropdown.
+function TextCell({
+  process,
+  field,
+  editCell,
+  editValue,
+  setEditValue,
+  onStartEdit,
+  onSave,
+  onCancel,
+  multiline,
+  type = 'text',
+  displayClassName,
+}) {
   const isEditing =
-    editCell?.sheetRow === process.sheetRow && editCell?.field === 'notas'
+    editCell?.sheetRow === process.sheetRow && editCell?.field === field
 
   if (isEditing) {
+    if (multiline) {
+      return (
+        <textarea
+          className="edit-textarea"
+          value={editValue}
+          onChange={e => setEditValue(e.target.value)}
+          onBlur={onSave}
+          onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+          autoFocus
+        />
+      )
+    }
     return (
-      <textarea
-        className="edit-textarea"
+      <input
+        type={type}
+        className="edit-input"
         value={editValue}
         onChange={e => setEditValue(e.target.value)}
         onBlur={onSave}
-        onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+        onKeyDown={e => {
+          if (e.key === 'Escape') onCancel()
+          if (e.key === 'Enter') e.target.blur()
+        }}
         autoFocus
       />
     )
   }
 
+  const value = process[field]
   return (
     <span
-      className="cell-notas"
-      onClick={() => onStartEdit(process, 'notas')}
-      title={process.notas || 'Clic para agregar nota'}
+      className={`cell-editable${displayClassName ? ` ${displayClassName}` : ''}${!value ? ' empty' : ''}`}
+      onClick={() => onStartEdit(process, field)}
+      title={multiline && value ? value : 'Clic para editar'}
     >
-      {process.notas || <span style={{ color: 'var(--text-muted)' }}>—</span>}
+      {value || '—'}
     </span>
   )
 }
@@ -171,17 +201,69 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       case 'orden':
         return <td key={col.key} data-label={col.label} className="cell-priority">{process.orden || '—'}</td>
       case 'ordenSecundario':
-        return <td key={col.key} data-label={col.label} className="cell-priority">{process.ordenSecundario || '—'}</td>
+        return (
+          <td key={col.key} data-label={col.label} className="cell-priority">
+            <TextCell
+              process={process}
+              field="ordenSecundario"
+              type="number"
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
       case 'nombre':
-        return <td key={col.key} data-label={col.label} className="cell-name">{process.nombre || '—'}</td>
+        return (
+          <td key={col.key} data-label={col.label}>
+            <TextCell
+              process={process}
+              field="nombre"
+              displayClassName="cell-name"
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
       case 'descripcion':
         return (
           <td key={col.key} data-label={col.label}>
-            <span className="cell-desc" title={process.descripcion}>{process.descripcion || '—'}</span>
+            <TextCell
+              process={process}
+              field="descripcion"
+              multiline
+              displayClassName="cell-desc"
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
           </td>
         )
       case 'responsables':
-        return <td key={col.key} data-label={col.label}>{process.responsables || '—'}</td>
+        return (
+          <td key={col.key} data-label={col.label}>
+            <TextCell
+              process={process}
+              field="responsables"
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
       case 'naturaleza':
         return (
           <td key={col.key} data-label={col.label}>
@@ -259,8 +341,10 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       case 'notas':
         return (
           <td key={col.key} data-label={col.label}>
-            <NotasCell
+            <TextCell
               process={process}
+              field="notas"
+              multiline
               editCell={editCell}
               editValue={editValue}
               setEditValue={setEditValue}

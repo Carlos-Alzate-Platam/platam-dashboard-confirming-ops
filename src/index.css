@@ -317,8 +317,8 @@ html, body, #root {
   opacity: 0.8;
 }
 
-/* Editable select/textarea */
-.edit-select, .edit-textarea {
+/* Editable select/input/textarea */
+.edit-select, .edit-input, .edit-textarea {
   background: var(--surface);
   border: 1px solid var(--cyan);
   color: var(--text);
@@ -349,20 +349,6 @@ html, body, #root {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
-}
-
-/* Notas cell */
-.cell-notas {
-  cursor: pointer;
-  color: var(--text-dim);
-  max-width: 220px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cell-notas:hover {
-  color: var(--text);
 }
 
 /* Map view */
@@ -790,8 +776,7 @@ html, body, #root {
     color: var(--text-muted);
   }
 
-  .cell-desc,
-  .cell-notas {
+  .cell-desc {
     max-width: none;
     white-space: normal;
     overflow: visible;
@@ -799,6 +784,7 @@ html, body, #root {
   }
 
   .edit-select,
+  .edit-input,
   .edit-textarea {
     font-size: 14px;
   }

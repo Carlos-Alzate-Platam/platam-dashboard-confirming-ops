@@ -59,9 +59,15 @@ export const COLUMNS_PM = [
   ...SHARED_COLUMNS,
 ]
 
-// Campos editables desde el dashboard, con dropdown de opciones fijas cuando aplica.
+// Campos editables desde el dashboard, con dropdown de opciones fijas cuando
+// aplica (null = texto/número libre). Orden queda fuera a propósito: es de
+// solo lectura.
 export const EDITABLE_FIELDS = {
+  ordenSecundario: null, // número libre, sin validar unicidad
+  nombre: null,
   tipo: TIPO_PROCESO,
+  descripcion: null,
+  responsables: null,
   naturaleza: ['', ...NATURALEZA_RIESGO],
   tipoIntervencion: TIPO_INTERVENCION,
   tratamiento: TRATAMIENTO,

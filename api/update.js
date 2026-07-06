@@ -4,8 +4,13 @@ const { isAuthenticated } = require('./_lib/session')
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_t64uj3iFNSNl-_SNGotD5bPb1a81QVA'
 const SHEET_TAB = process.env.SHEET_TAB || 'Seguimiento'
 
+// Orden (columna A) se deja fuera a propósito: es de solo lectura.
 const FIELD_TO_COLUMN = {
+  ordenSecundario: 'B',
+  nombre: 'C',
   tipo: 'D',
+  descripcion: 'E',
+  responsables: 'F',
   naturaleza: 'G',
   tipoIntervencion: 'H',
   tratamiento: 'I',
