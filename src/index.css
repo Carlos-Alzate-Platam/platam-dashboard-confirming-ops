@@ -61,17 +61,8 @@ html, body, #root {
   background: var(--gradient-brand);
 }
 
-.header-logo-badge {
-  display: inline-flex;
-  align-items: center;
-  background: #FFFFFF;
-  border-radius: 6px;
-  padding: 4px 10px;
-  line-height: 0;
-}
-
 .header-logo-img {
-  height: 22px;
+  height: 24px;
   width: auto;
   display: block;
 }

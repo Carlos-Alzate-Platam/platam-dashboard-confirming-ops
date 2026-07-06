@@ -33,13 +33,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <span className="header-logo-badge">
-          <img
-            className="header-logo-img"
-            src="https://rnpfthuoxyvuozcqpjlj.supabase.co/storage/v1/object/public/Brand%20Platam/logo_platam_light.png"
-            alt="Platam Confirming"
-          />
-        </span>
+        <img
+          className="header-logo-img"
+          src="https://rnpfthuoxyvuozcqpjlj.supabase.co/storage/v1/object/public/Brand%20Platam/logo_platam_conf_dark.png"
+          alt="Platam Confirming"
+        />
         <NavTabs active={activeTab} onChange={handleTabChange} />
       </header>
 
