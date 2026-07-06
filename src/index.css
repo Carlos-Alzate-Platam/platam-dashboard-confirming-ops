@@ -251,10 +251,36 @@ html, body, #root {
 
 .cell-desc {
   color: var(--text-dim);
-  max-width: 260px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 300px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Columnas fijas (Orden, Nombre, Tipo, Descripción) al hacer scroll
+   horizontal. El fondo se fija explícitamente (no transparente) para que
+   el contenido de las columnas que se desliza por debajo no se superponga;
+   también sigue el zebra striping y el hover de la fila para no romper
+   la consistencia visual. */
+.sticky-col {
+  position: sticky;
+  z-index: 1;
+  background: var(--bg);
+}
+
+.process-table thead th.sticky-col {
+  z-index: 3;
+  background: var(--surface-2);
+}
+
+@media (min-width: 641px) {
+  .process-table tbody tr:nth-child(even) td.sticky-col {
+    background: var(--surface);
+  }
+}
+
+.process-table tbody tr:hover td.sticky-col {
+  background: var(--surface-2);
 }
 
 .cell-editable {
@@ -805,6 +831,17 @@ html, body, #root {
 
   .process-table td:last-child {
     border-bottom: none;
+  }
+
+  /* En tarjetas la tabla ya no se desplaza horizontalmente, así que las
+     columnas fijas vuelven a su comportamiento normal. */
+  .process-table td.sticky-col {
+    position: static;
+    left: auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    background: transparent;
   }
 
   .process-table td::before {

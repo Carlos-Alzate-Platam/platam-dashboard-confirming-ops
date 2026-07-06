@@ -37,11 +37,14 @@ export const TIPO_PROCESO = [
 
 // Columnas compartidas por ambas vistas de tabla; solo cambia cuál de las
 // dos columnas de orden va primero (Orden en Procesos, Orden_02 en PM).
+// `sticky: true` marca las columnas fijas al hacer scroll horizontal — su
+// ancho queda fijo (no solo mínimo) para que el offset acumulado de la
+// siguiente columna fija sea siempre correcto.
 const SHARED_COLUMNS = [
-  { key: 'nombre', label: 'Nombre', width: '160px' },
-  { key: 'tipo', label: 'Tipo', width: '110px' },
+  { key: 'nombre', label: 'Nombre', width: '160px', sticky: true },
+  { key: 'tipo', label: 'Tipo', width: '110px', sticky: true },
   { key: 'severidad', label: 'Severidad', width: '110px' },
-  { key: 'descripcion', label: 'Descripción', width: '240px' },
+  { key: 'descripcion', label: 'Descripción', width: '300px', sticky: true },
   { key: 'responsables', label: 'Responsables', width: '130px' },
   { key: 'naturaleza', label: 'Naturaleza', width: '180px' },
   { key: 'tipoIntervencion', label: 'Tipo intervención', width: '180px' },
@@ -51,14 +54,14 @@ const SHARED_COLUMNS = [
 ]
 
 export const COLUMNS_PROCESOS = [
-  { key: 'orden', label: 'Orden', width: '70px' },
+  { key: 'orden', label: 'Orden', width: '70px', sticky: true },
   ...SHARED_COLUMNS,
 ]
 
 export const COLUMNS_PM = [
   // Encabezado visible como "Priorización" solo en esta vista; la columna
   // real en Sheets sigue llamándose Orden_02 (no se toca la lectura/escritura).
-  { key: 'ordenSecundario', label: 'Priorización', width: '70px' },
+  { key: 'ordenSecundario', label: 'Priorización', width: '70px', sticky: true },
   ...SHARED_COLUMNS,
 ]
 

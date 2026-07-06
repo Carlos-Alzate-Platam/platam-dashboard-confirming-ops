@@ -232,12 +232,38 @@ function TextCell({
   )
 }
 
+// Offset acumulado (izquierda) de cada columna fija, sumando solo el ancho
+// de las columnas fijas anteriores — las columnas no fijas de por medio
+// (ej. Severidad) simplemente se deslizan por debajo al hacer scroll.
+function useStickyOffsets(columns) {
+  return useMemo(() => {
+    let offset = 0
+    const map = {}
+    for (const col of columns) {
+      if (!col.sticky) continue
+      map[col.key] = offset
+      offset += parseInt(col.width, 10) || 0
+    }
+    return map
+  }, [columns])
+}
+
 export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [saving, setSaving] = useState(false)
+  const stickyOffsets = useStickyOffsets(columns)
+
+  function stickyStyle(col) {
+    if (!col.sticky) return undefined
+    return { left: `${stickyOffsets[col.key]}px`, width: col.width, minWidth: col.width, maxWidth: col.width }
+  }
+
+  function stickyClassName(col, extra) {
+    return [extra, col.sticky ? 'sticky-col' : null].filter(Boolean).join(' ') || undefined
+  }
 
   const sorted = useMemo(() => {
     if (!sortKey) return processes
@@ -295,10 +321,14 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
   function renderCell(process, col) {
     switch (col.key) {
       case 'orden':
-        return <td key={col.key} data-label={col.label} className="cell-priority">{process.orden || '—'}</td>
+        return (
+          <td key={col.key} data-label={col.label} className={stickyClassName(col, 'cell-priority')} style={stickyStyle(col)}>
+            {process.orden || '—'}
+          </td>
+        )
       case 'ordenSecundario':
         return (
-          <td key={col.key} data-label={col.label} className="cell-priority">
+          <td key={col.key} data-label={col.label} className={stickyClassName(col, 'cell-priority')} style={stickyStyle(col)}>
             <TextCell
               process={process}
               field="ordenSecundario"
@@ -314,7 +344,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
         )
       case 'nombre':
         return (
-          <td key={col.key} data-label={col.label}>
+          <td key={col.key} data-label={col.label} className={stickyClassName(col)} style={stickyStyle(col)}>
             <TextCell
               process={process}
               field="nombre"
@@ -330,7 +360,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
         )
       case 'descripcion':
         return (
-          <td key={col.key} data-label={col.label}>
+          <td key={col.key} data-label={col.label} className={stickyClassName(col)} style={stickyStyle(col)}>
             <TextCell
               process={process}
               field="descripcion"
@@ -392,7 +422,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
         )
       case 'tipo':
         return (
-          <td key={col.key} data-label={col.label}>
+          <td key={col.key} data-label={col.label} className={stickyClassName(col)} style={stickyStyle(col)}>
             <TipoCell
               process={process}
               editCell={editCell}
@@ -480,7 +510,8 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
             {columns.map(col => (
               <th
                 key={col.key}
-                style={{ minWidth: col.width }}
+                className={stickyClassName(col)}
+                style={col.sticky ? stickyStyle(col) : { minWidth: col.width }}
                 onClick={() => handleSort(col.key)}
               >
                 {col.label}
