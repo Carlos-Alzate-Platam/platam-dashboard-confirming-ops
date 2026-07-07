@@ -404,6 +404,36 @@ html, body, #root {
   opacity: 0.8;
 }
 
+/* Estado filter bar (Project manager) */
+.estado-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.estado-filter-pill {
+  background: transparent;
+  border: 1px solid var(--border-2);
+  color: var(--text-dim);
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.estado-filter-pill:hover {
+  opacity: 0.8;
+}
+
+.estado-filter-pill.active {
+  border-width: 1px;
+}
+
 /* Tipo chip */
 .tipo-chip {
   display: inline-block;

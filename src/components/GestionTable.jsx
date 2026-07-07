@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   EDITABLE_FIELDS,
   esRiesgo,
+  ESTADOS,
   ESTADO_STYLE,
   TIPO_STYLE,
   parseResponsables,
@@ -70,6 +71,31 @@ function SortableRow({ process, columns, renderCell }) {
       </td>
       {columns.map(col => renderCell(process, col))}
     </tr>
+  )
+}
+
+// Fila de filtros por Estado — solo se usa en Project manager cuando
+// enableEstadoFilter está activo. Selección múltiple: sin nada activo se
+// muestran todas las filas (comportamiento actual).
+function EstadoFilterBar({ activeEstados, onToggle }) {
+  return (
+    <div className="estado-filter-bar">
+      {ESTADOS.map(estado => {
+        const style = ESTADO_STYLE[estado] || { color: '#6B7280', bg: '#1A1E2A' }
+        const isActive = activeEstados.includes(estado)
+        return (
+          <button
+            key={estado}
+            type="button"
+            className={`estado-filter-pill${isActive ? ' active' : ''}`}
+            style={isActive ? { background: style.bg, color: style.color, borderColor: style.color } : undefined}
+            onClick={() => onToggle(estado)}
+          >
+            {estado}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -315,12 +341,13 @@ function useStickyOffsets(columns, baseOffset) {
   }, [columns, baseOffset])
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder }) {
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [saving, setSaving] = useState(false)
+  const [activeEstados, setActiveEstados] = useState([])
   const stickyOffsets = useStickyOffsets(columns, enableDragReorder ? DRAG_HANDLE_WIDTH : 0)
   const dragSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -357,6 +384,20 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       return sortDir === 'asc' ? cmp : -cmp
     })
   }, [processes, sortKey, sortDir])
+
+  // Solo se usa cuando enableEstadoFilter está activo (Project manager).
+  // Filtra sobre la lista ya ordenada, así el drag-and-drop y el
+  // ordenamiento operan siempre sobre las mismas filas visibles.
+  const visibleRows = useMemo(() => {
+    if (!activeEstados.length) return sorted
+    return sorted.filter(p => activeEstados.includes(p.estado))
+  }, [sorted, activeEstados])
+
+  function handleToggleEstado(estado) {
+    setActiveEstados(prev =>
+      prev.includes(estado) ? prev.filter(e => e !== estado) : [...prev, estado]
+    )
+  }
 
   function handleSort(key) {
     if (sortKey === key) {
@@ -425,11 +466,11 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const oldIndex = sorted.findIndex(p => p.sheetRow === active.id)
-    const newIndex = sorted.findIndex(p => p.sheetRow === over.id)
+    const oldIndex = visibleRows.findIndex(p => p.sheetRow === active.id)
+    const newIndex = visibleRows.findIndex(p => p.sheetRow === over.id)
     if (oldIndex === -1 || newIndex === -1) return
 
-    const reordered = arrayMove(sorted, oldIndex, newIndex)
+    const reordered = arrayMove(visibleRows, oldIndex, newIndex)
     const lo = Math.min(oldIndex, newIndex)
     const hi = Math.max(oldIndex, newIndex)
 
@@ -674,6 +715,9 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
         {saving ? <p className="saving-indicator">Guardando en Sheets...</p> : <span />}
         <button className="add-process-btn" onClick={onAddNew}>+ Nuevo proceso</button>
       </div>
+      {enableEstadoFilter && (
+        <EstadoFilterBar activeEstados={activeEstados} onToggle={handleToggleEstado} />
+      )}
       <p className="table-scroll-hint">Desliza horizontalmente para ver todas las columnas →</p>
       <table className="process-table">
         <thead>
@@ -700,9 +744,9 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
         </thead>
         {enableDragReorder ? (
           <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={sorted.map(p => p.sheetRow)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={visibleRows.map(p => p.sheetRow)} strategy={verticalListSortingStrategy}>
               <tbody>
-                {sorted.map(p => (
+                {visibleRows.map(p => (
                   <SortableRow key={p.sheetRow} process={p} columns={columns} renderCell={renderCell} />
                 ))}
               </tbody>
@@ -710,7 +754,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
           </DndContext>
         ) : (
           <tbody>
-            {sorted.map(p => (
+            {visibleRows.map(p => (
               <tr key={p.sheetRow}>
                 {columns.map(col => renderCell(p, col))}
               </tr>

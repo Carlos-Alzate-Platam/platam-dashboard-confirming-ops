@@ -93,6 +93,7 @@ export default function App() {
                 defaultSortKey="ordenSecundario"
                 enableDragReorder
                 onReorder={batchUpdateCells}
+                enableEstadoFilter
               />
             )}
 
