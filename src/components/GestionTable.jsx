@@ -9,9 +9,15 @@ import {
   TIPO_STYLE,
   parseResponsables,
   colorForResponsable,
+  buildUpdateEntry,
 } from '../constants'
 
 const NUMERIC_SORT_KEYS = ['orden', 'ordenSecundario']
+
+// Update 1/2/3 (Project manager) no se sobreescriben: cada guardado agrega
+// una entrada nueva con fecha, debajo del historial existente. Ver
+// handleStartEdit/handleSave y buildUpdateEntry en constants.js.
+const HISTORY_FIELDS = ['update1', 'update2', 'update3']
 
 // Ancho de la columna del ícono de agarre (drag handle) — solo se usa en
 // la vista Project manager cuando enableDragReorder está activo.
@@ -244,6 +250,7 @@ function TextCell({
   multiline,
   type = 'text',
   displayClassName,
+  placeholder,
 }) {
   const isEditing =
     editCell?.sheetRow === process.sheetRow && editCell?.field === field
@@ -257,6 +264,7 @@ function TextCell({
           onChange={e => setEditValue(e.target.value)}
           onBlur={onSave}
           onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+          placeholder={placeholder}
           autoFocus
         />
       )
@@ -362,12 +370,36 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
   function handleStartEdit(process, field) {
     if (!(field in EDITABLE_FIELDS)) return
     setEditCell({ sheetRow: process.sheetRow, field })
-    setEditValue(process[field] || '')
+    // Update 1/2/3 no se editan in-place: el textarea arranca vacío para
+    // que el usuario solo escriba la entrada nueva, no reescriba el
+    // historial ya guardado.
+    setEditValue(HISTORY_FIELDS.includes(field) ? '' : (process[field] || ''))
   }
 
   const handleSave = useCallback(async () => {
     if (!editCell || saving) return
     const { sheetRow, field } = editCell
+
+    if (HISTORY_FIELDS.includes(field)) {
+      const nuevoTexto = editValue.trim()
+      if (!nuevoTexto) {
+        setEditCell(null)
+        return
+      }
+      const proceso = processes.find(p => p.sheetRow === sheetRow)
+      const valorFinal = buildUpdateEntry(proceso?.[field], nuevoTexto)
+      setSaving(true)
+      try {
+        await onUpdate(sheetRow, field, valorFinal)
+      } catch (err) {
+        console.error('Error al guardar:', err)
+      } finally {
+        setSaving(false)
+        setEditCell(null)
+      }
+      return
+    }
+
     setSaving(true)
     try {
       await onUpdate(sheetRow, field, editValue)
@@ -377,7 +409,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       setSaving(false)
       setEditCell(null)
     }
-  }, [editCell, editValue, saving, onUpdate])
+  }, [editCell, editValue, saving, onUpdate, processes])
 
   function handleCancel() {
     setEditCell(null)
@@ -585,6 +617,42 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
             <TextCell
               process={process}
               field="notas"
+              multiline
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
+      case 'update1':
+      case 'update2':
+      case 'update3':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <TextCell
+              process={process}
+              field={col.key}
+              multiline
+              displayClassName="cell-history"
+              placeholder="Nueva actualización..."
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
+      case 'kpis':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <TextCell
+              process={process}
+              field="kpis"
               multiline
               editCell={editCell}
               editValue={editValue}

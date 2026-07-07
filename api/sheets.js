@@ -148,7 +148,7 @@ module.exports = async function handler(req, res) {
     const sheets = google.sheets({ version: 'v4', auth })
     response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_TAB}!A:L`,
+      range: `${SHEET_TAB}!A:P`,
     })
   } catch (err) {
     return sendError(res, classifyGoogleError(err))
@@ -160,7 +160,8 @@ module.exports = async function handler(req, res) {
   // rows[0] es el encabezado; rows[i] para i>=1 es dato en sheet row i+1
   // Columnas: A Orden, B Orden_02, C Nombre, D Tipo, E Severidad,
   // F Descripción, G Responsables, H Naturaleza, I Tipo Intervención,
-  // J Tratamiento, K Estado, L Notas
+  // J Tratamiento, K Estado, L Notas, M Update 1, N Update 2, O Update 3,
+  // P KPIs
   const processes = rows
     .slice(1)
     .map((row, i) => ({
@@ -177,6 +178,10 @@ module.exports = async function handler(req, res) {
       tratamiento: row[9] || '',
       estado: row[10] || '',
       notas: row[11] || '',
+      update1: row[12] || '',
+      update2: row[13] || '',
+      update3: row[14] || '',
+      kpis: row[15] || '',
     }))
     .filter(p => p.nombre || p.descripcion)
 

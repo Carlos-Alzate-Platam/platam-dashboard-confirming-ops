@@ -267,6 +267,10 @@ module.exports = async function handler(req, res) {
       tratamiento,
       estado,
       notas,
+      update1: '',
+      update2: '',
+      update3: '',
+      kpis: '',
     },
   })
 }

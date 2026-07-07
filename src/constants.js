@@ -63,6 +63,12 @@ export const COLUMNS_PM = [
   // real en Sheets sigue llamándose Orden_02 (no se toca la lectura/escritura).
   { key: 'ordenSecundario', label: 'Priorización', width: '70px', sticky: true },
   ...SHARED_COLUMNS,
+  // Solo en Project manager — no se agregan a SHARED_COLUMNS para que
+  // Procesos no las muestre.
+  { key: 'update1', label: 'Update 1', width: '220px' },
+  { key: 'update2', label: 'Update 2', width: '220px' },
+  { key: 'update3', label: 'Update 3', width: '220px' },
+  { key: 'kpis', label: 'KPIs', width: '220px' },
 ]
 
 // Campos editables desde el dashboard, con dropdown de opciones fijas cuando
@@ -80,6 +86,10 @@ export const EDITABLE_FIELDS = {
   tratamiento: TRATAMIENTO,
   estado: ESTADOS,
   notas: null, // texto libre
+  update1: null, // texto libre; ver buildUpdateEntry para el formato de guardado
+  update2: null,
+  update3: null,
+  kpis: null, // texto libre, sin historial acumulado
 }
 
 export function esRiesgo(naturaleza) {
@@ -142,4 +152,22 @@ export function colorForResponsable(nombre) {
   }
   const index = Math.abs(hash) % RESPONSABLE_PALETTE.length
   return RESPONSABLE_PALETTE[index]
+}
+
+const MESES_ABREV = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+function formatFechaCorta(date) {
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mmm = MESES_ABREV[date.getMonth()]
+  const yyyy = date.getFullYear()
+  return `${dd} ${mmm} ${yyyy}`
+}
+
+// Antepone la fecha actual entre corchetes a un texto nuevo (formato
+// [DD mmm AAAA]) y lo agrega debajo del contenido previo de la celda,
+// separado por salto de línea, en vez de sobreescribirlo — así Update 1/2/3
+// acumulan un historial cronológico dentro de la misma celda.
+export function buildUpdateEntry(previousValue, newText) {
+  const entry = `[${formatFechaCorta(new Date())}] ${newText}`
+  return previousValue && previousValue.trim() ? `${previousValue}\n${entry}` : entry
 }

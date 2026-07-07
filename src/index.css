@@ -278,6 +278,17 @@ html, body, #root {
   overflow-wrap: break-word;
 }
 
+/* Update 1/2/3 (Project manager) — el valor guardado acumula entradas
+   fechadas separadas por salto de línea; pre-line conserva esos saltos
+   en vez de colapsarlos en un solo espacio como haría "normal". */
+.cell-history {
+  color: var(--text-dim);
+  max-width: 260px;
+  white-space: pre-line;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
 /* Columnas fijas (Orden, Nombre, Tipo, Descripción) al hacer scroll
    horizontal. El fondo se fija explícitamente (no transparente) para que
    el contenido de las columnas que se desliza por debajo no se superponga;

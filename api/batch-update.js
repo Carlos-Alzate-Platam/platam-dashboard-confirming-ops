@@ -18,6 +18,10 @@ const FIELD_TO_COLUMN = {
   tratamiento: 'J',
   estado: 'K',
   notas: 'L',
+  update1: 'M',
+  update2: 'N',
+  update3: 'O',
+  kpis: 'P',
 }
 
 function apiError(statusCode, code, error, detail) {
