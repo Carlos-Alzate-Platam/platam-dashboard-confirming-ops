@@ -640,12 +640,11 @@ html, body, #root {
   flex-shrink: 0;
 }
 
-/* Bubble tooltip hint */
+/* Bubble tooltip hint — en flujo normal, así siempre queda justo después de
+   la última fila de burbujas (no una posición fija en píxeles). */
 .map-hint {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  text-align: center;
+  padding: 12px 0 24px;
   font-size: 11px;
   color: var(--text-muted);
   pointer-events: none;
