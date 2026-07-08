@@ -61,7 +61,7 @@ export function esRiesgoVisibleEnTab(naturaleza) {
 const SHARED_COLUMNS = [
   { key: 'nombre', label: 'Nombre', width: '160px', sticky: true },
   { key: 'tipo', label: 'Tipo', width: '110px', sticky: true },
-  { key: 'severidad', label: 'Severidad', width: '110px' },
+  { key: 'severidad', label: 'Relevancia', width: '110px' },
   { key: 'descripcion', label: 'Descripción', width: '300px', sticky: true },
   { key: 'responsables', label: 'Responsables', width: '130px' },
   { key: 'naturaleza', label: 'Naturaleza', width: '180px' },
