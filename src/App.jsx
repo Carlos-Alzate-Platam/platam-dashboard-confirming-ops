@@ -5,10 +5,10 @@ import GestionTable from './components/GestionTable'
 import BubbleMap from './components/BubbleMap'
 import ProcessPanel from './components/ProcessPanel'
 import NewProcessModal from './components/NewProcessModal'
-import { COLUMNS_PROCESOS, COLUMNS_PM } from './constants'
+import { COLUMNS_PROCESOS, COLUMNS_PM, COLUMNS_RIESGOS, esRiesgoVisibleEnTab } from './constants'
 
 export default function App() {
-  const { processes, loading, error, retry, updateCell, batchUpdateCells, createProcess } = useSheets()
+  const { processes, loading, error, retry, refreshSilently, updateCell, batchUpdateCells, createProcess } = useSheets()
   const [activeTab, setActiveTab] = useState('procesos')
   const [selectedProcess, setSelectedProcess] = useState(null)
   const [newProcessDefaultTipo, setNewProcessDefaultTipo] = useState(null)
@@ -18,9 +18,17 @@ export default function App() {
     [processes]
   )
 
+  const riesgosProcesses = useMemo(
+    () => processes.filter(p => esRiesgoVisibleEnTab(p.naturaleza)),
+    [processes]
+  )
+
   function handleTabChange(tab) {
     setActiveTab(tab)
     setSelectedProcess(null)
+    // Refresca desde Sheets al entrar a una pestaña, para que un campo
+    // compartido editado desde otra vista se vea al día sin recargar todo.
+    refreshSilently()
   }
 
   function openNewProcessModal(defaultTipo) {
@@ -94,6 +102,16 @@ export default function App() {
                 enableDragReorder
                 onReorder={batchUpdateCells}
                 enableEstadoFilter
+              />
+            )}
+
+            {activeTab === 'riesgos' && (
+              <GestionTable
+                processes={riesgosProcesses}
+                onUpdate={updateCell}
+                columns={COLUMNS_RIESGOS}
+                defaultSortKey="orden"
+                hideAddButton
               />
             )}
 

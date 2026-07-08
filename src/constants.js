@@ -35,6 +35,24 @@ export const TIPO_PROCESO = [
   'Atención',
 ]
 
+export const PROBABILIDAD = ['Alta', 'Media', 'Baja']
+
+export const IMPACTO = ['Alto', 'Medio', 'Bajo']
+
+export const FRECUENCIA_REVISION = ['Semanal', 'Mensual', 'Trimestral', 'Semestral', 'Sin definir']
+
+// Únicas dos naturalezas que hacen que una fila aparezca en la vista
+// "Riesgos" — se recalcula en cada carga a partir de este valor, así que
+// una fila deja de mostrarse ahí en cuanto su Naturaleza cambia a otra cosa.
+export const NATURALEZA_RIESGOS_VISIBLES = [
+  'Riesgo de fraude o control',
+  'Riesgo de compliance o regulatorio',
+]
+
+export function esRiesgoVisibleEnTab(naturaleza) {
+  return NATURALEZA_RIESGOS_VISIBLES.includes(naturaleza)
+}
+
 // Columnas compartidas por ambas vistas de tabla; solo cambia cuál de las
 // dos columnas de orden va primero (Orden en Procesos, Orden_02 en PM).
 // `sticky: true` marca las columnas fijas al hacer scroll horizontal — su
@@ -71,6 +89,27 @@ export const COLUMNS_PM = [
   { key: 'kpis', label: 'KPIs', width: '220px' },
 ]
 
+// Vista "Riesgos" — filas de Seguimiento filtradas por Naturaleza (ver
+// esRiesgoVisibleEnTab). No reutiliza SHARED_COLUMNS: el set y orden de
+// columnas es propio de esta vista (columnas Q-X de la hoja).
+export const COLUMNS_RIESGOS = [
+  { key: 'orden', label: 'Orden', width: '70px', sticky: true },
+  { key: 'nombre', label: 'Nombre', width: '160px', sticky: true },
+  { key: 'descripcion', label: 'Descripción', width: '260px', sticky: true },
+  { key: 'naturaleza', label: 'Naturaleza', width: '200px' },
+  { key: 'estado', label: 'Estado', width: '140px' },
+  { key: 'responsables', label: 'Responsables', width: '130px' },
+  { key: 'tratamiento', label: 'Tratamiento', width: '130px' },
+  { key: 'probabilidad', label: 'Probabilidad', width: '110px' },
+  { key: 'impacto', label: 'Impacto', width: '110px' },
+  { key: 'urgencia', label: 'Urgencia', width: '110px' },
+  { key: 'controlPreventivo', label: 'Control preventivo', width: '220px' },
+  { key: 'controlDetectivo', label: 'Control detectivo', width: '220px' },
+  { key: 'controlCorrectivo', label: 'Control correctivo', width: '220px' },
+  { key: 'frecuenciaRevision', label: 'Frecuencia revisión', width: '150px' },
+  { key: 'responsableMonitoreo', label: 'Responsable monitoreo', width: '180px' },
+]
+
 // Campos editables desde el dashboard, con dropdown de opciones fijas cuando
 // aplica (null = texto/número libre). Orden queda fuera a propósito: es de
 // solo lectura.
@@ -90,6 +129,16 @@ export const EDITABLE_FIELDS = {
   update2: null,
   update3: null,
   kpis: null, // texto libre, sin historial acumulado
+  probabilidad: PROBABILIDAD,
+  impacto: IMPACTO,
+  // urgencia queda fuera a propósito: se calcula con una fórmula en la
+  // propia hoja de Google Sheets a partir de Probabilidad e Impacto — el
+  // dashboard solo la lee, nunca la escribe.
+  controlPreventivo: null,
+  controlDetectivo: null,
+  controlCorrectivo: null,
+  frecuenciaRevision: FRECUENCIA_REVISION,
+  responsableMonitoreo: null,
 }
 
 export function esRiesgo(naturaleza) {

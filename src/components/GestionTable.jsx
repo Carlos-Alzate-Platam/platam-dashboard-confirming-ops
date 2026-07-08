@@ -341,7 +341,7 @@ function useStickyOffsets(columns, baseOffset) {
   }, [columns, baseOffset])
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter }) {
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
@@ -704,6 +704,86 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
             />
           </td>
         )
+      case 'probabilidad':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <SelectCell
+              process={process}
+              field="probabilidad"
+              options={EDITABLE_FIELDS.probabilidad}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'impacto':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <SelectCell
+              process={process}
+              field="impacto"
+              options={EDITABLE_FIELDS.impacto}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'frecuenciaRevision':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <SelectCell
+              process={process}
+              field="frecuenciaRevision"
+              options={EDITABLE_FIELDS.frecuenciaRevision}
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+            />
+          </td>
+        )
+      case 'controlPreventivo':
+      case 'controlDetectivo':
+      case 'controlCorrectivo':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <TextCell
+              process={process}
+              field={col.key}
+              multiline
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
+      case 'responsableMonitoreo':
+        return (
+          <td key={col.key} data-label={col.label}>
+            <TextCell
+              process={process}
+              field="responsableMonitoreo"
+              editCell={editCell}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
+          </td>
+        )
+      // 'urgencia' no tiene case propio a propósito: cae en el default de
+      // solo lectura de abajo, sin onClick — es una fórmula de la hoja.
       default:
         return <td key={col.key} data-label={col.label}>{process[col.key] || '—'}</td>
     }
@@ -713,7 +793,9 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
     <div className="table-wrapper">
       <div className="table-toolbar">
         {saving ? <p className="saving-indicator">Guardando en Sheets...</p> : <span />}
-        <button className="add-process-btn" onClick={onAddNew}>+ Nuevo proceso</button>
+        {!hideAddButton && (
+          <button className="add-process-btn" onClick={onAddNew}>+ Nuevo proceso</button>
+        )}
       </div>
       {enableEstadoFilter && (
         <EstadoFilterBar activeEstados={activeEstados} onToggle={handleToggleEstado} />

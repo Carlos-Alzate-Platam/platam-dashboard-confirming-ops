@@ -1,6 +1,7 @@
 const TABS = [
   { key: 'procesos', label: 'Procesos' },
   { key: 'map', label: 'Mapa de procesos' },
+  { key: 'riesgos', label: 'Riesgos' },
   { key: 'pm', label: 'Project manager' },
 ]
 

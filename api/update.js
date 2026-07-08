@@ -4,7 +4,8 @@ const { isAuthenticated } = require('./_lib/session')
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_t64uj3iFNSNl-_SNGotD5bPb1a81QVA'
 const SHEET_TAB = process.env.SHEET_TAB || 'Seguimiento'
 
-// Orden (columna A) se deja fuera a propósito: es de solo lectura.
+// Orden (columna A) y Urgencia (columna S, fórmula de la hoja) se dejan
+// fuera a propósito: son de solo lectura.
 const FIELD_TO_COLUMN = {
   ordenSecundario: 'B',
   nombre: 'C',
@@ -21,6 +22,13 @@ const FIELD_TO_COLUMN = {
   update2: 'N',
   update3: 'O',
   kpis: 'P',
+  probabilidad: 'Q',
+  impacto: 'R',
+  controlPreventivo: 'T',
+  controlDetectivo: 'U',
+  controlCorrectivo: 'V',
+  frecuenciaRevision: 'W',
+  responsableMonitoreo: 'X',
 }
 
 function apiError(statusCode, code, error, detail) {

@@ -25,9 +25,17 @@ export function useSheets() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchProcesses = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  // `silent` se usa al navegar entre pestañas: refresca `processes` desde
+  // Sheets en segundo plano sin tocar `loading`/`error`, para que las vistas
+  // ya cargadas no parpadeen ni muestren el spinner de carga completa. Un
+  // fallo en modo silencioso solo se registra en consola — la vista sigue
+  // mostrando los datos que ya tenía.
+  const fetchProcesses = useCallback(async (opts = {}) => {
+    const { silent = false } = opts
+    if (!silent) {
+      setLoading(true)
+      setError(null)
+    }
     try {
       let res
       try {
@@ -35,19 +43,26 @@ export function useSheets() {
       } catch (networkErr) {
         // fetch() itself throws only on network-level failures (no connection, CORS block, etc.)
         console.error('[Platam API] Error de red al llamar /api/sheets:', networkErr)
+        if (silent) return
         throw new Error('No se pudo conectar con el servidor. Verifica que vercel dev esté corriendo.')
       }
 
-      if (!res.ok) throw await extractApiError(res)
+      if (!res.ok) {
+        const err = await extractApiError(res)
+        if (silent) return
+        throw err
+      }
 
       const data = await res.json()
       setProcesses(data)
     } catch (err) {
-      setError(err.message)
+      if (!silent) setError(err.message)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
+
+  const refreshSilently = useCallback(() => fetchProcesses({ silent: true }), [fetchProcesses])
 
   useEffect(() => { fetchProcesses() }, [fetchProcesses])
 
@@ -133,5 +148,5 @@ export function useSheets() {
     return process
   }, [])
 
-  return { processes, loading, error, retry: fetchProcesses, updateCell, batchUpdateCells, createProcess }
+  return { processes, loading, error, retry: fetchProcesses, refreshSilently, updateCell, batchUpdateCells, createProcess }
 }

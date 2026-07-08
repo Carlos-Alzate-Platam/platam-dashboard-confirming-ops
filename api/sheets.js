@@ -148,7 +148,7 @@ module.exports = async function handler(req, res) {
     const sheets = google.sheets({ version: 'v4', auth })
     response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_TAB}!A:P`,
+      range: `${SHEET_TAB}!A:X`,
     })
   } catch (err) {
     return sendError(res, classifyGoogleError(err))
@@ -161,7 +161,9 @@ module.exports = async function handler(req, res) {
   // Columnas: A Orden, B Orden_02, C Nombre, D Tipo, E Severidad,
   // F Descripción, G Responsables, H Naturaleza, I Tipo Intervención,
   // J Tratamiento, K Estado, L Notas, M Update 1, N Update 2, O Update 3,
-  // P KPIs
+  // P KPIs, Q Probabilidad, R Impacto, S Urgencia (fórmula de la hoja,
+  // solo lectura), T Control Preventivo, U Control Detectivo,
+  // V Control Correctivo, W Frecuencia Revisión, X Responsable Monitoreo
   const processes = rows
     .slice(1)
     .map((row, i) => ({
@@ -182,6 +184,14 @@ module.exports = async function handler(req, res) {
       update2: row[13] || '',
       update3: row[14] || '',
       kpis: row[15] || '',
+      probabilidad: row[16] || '',
+      impacto: row[17] || '',
+      urgencia: row[18] || '',
+      controlPreventivo: row[19] || '',
+      controlDetectivo: row[20] || '',
+      controlCorrectivo: row[21] || '',
+      frecuenciaRevision: row[22] || '',
+      responsableMonitoreo: row[23] || '',
     }))
     .filter(p => p.nombre || p.descripcion)
 
