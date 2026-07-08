@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import { esAtencion, parseResponsables, colorForResponsable } from '../constants'
+import { esAtencion, esRiesgoVisibleEnTab, parseResponsables, colorForResponsable } from '../constants'
 
 const RADIUS = 44
 // Tamaño por Severidad (1/2/3) para procesos de Atención. Los saltos son
@@ -35,6 +35,14 @@ const ARROW_OPACITY = 0.35
 const RESPONSABLE_FONT_SIZE = '9px'
 const RESPONSABLE_MAX_CHARS = 12
 const RESPONSABLE_SEPARATOR_COLOR = '#8B96AE'
+
+// Badge "Riesgo" junto a la etiqueta de Responsables — mismo color que ya
+// tiene asignado el primer responsable visible (colorForResponsable), sin
+// inventar un color nuevo. Tamaño discreto para no competir con el nombre.
+const RIESGO_BADGE_FONT_SIZE = 8
+const RIESGO_BADGE_HEIGHT = 12
+const RIESGO_BADGE_PADDING_X = 6
+const RIESGO_BADGE_GAP = 5
 
 function ordenValue(p) {
   const n = parseInt(p.orden, 10)
@@ -246,6 +254,49 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
 
         if (hiddenCount > 0) {
           text.append('tspan').attr('fill', RESPONSABLE_SEPARATOR_COLOR).text(` +${hiddenCount}`)
+        }
+
+        // Badge "Riesgo" — solo para Naturaleza de riesgo formal (misma
+        // regla que la vista "Riesgos"). Se mide el nombre ya renderizado
+        // (getBBox) para ubicar el badge justo a su derecha sin
+        // superponerse ni tener que recentrar la etiqueta existente.
+        if (esRiesgoVisibleEnTab(d.naturaleza)) {
+          const nameBox = text.node().getBBox()
+          const badgeColor = colorForResponsable(visible[0])
+          const badgeCenterY = nameBox.y + nameBox.height / 2
+          const badgeX0 = nameBox.x + nameBox.width + RIESGO_BADGE_GAP
+
+          const measure = el.append('text')
+            .attr('font-family', 'Lato, system-ui, sans-serif')
+            .attr('font-size', `${RIESGO_BADGE_FONT_SIZE}px`)
+            .attr('font-weight', '700')
+            .text('Riesgo')
+          const badgeTextWidth = measure.node().getBBox().width
+          measure.remove()
+
+          const badgeWidth = badgeTextWidth + RIESGO_BADGE_PADDING_X * 2
+
+          el.append('rect')
+            .attr('class', 'risk-pill-bg')
+            .attr('x', badgeX0)
+            .attr('y', badgeCenterY - RIESGO_BADGE_HEIGHT / 2)
+            .attr('width', badgeWidth)
+            .attr('height', RIESGO_BADGE_HEIGHT)
+            .attr('rx', RIESGO_BADGE_HEIGHT / 2)
+            .attr('fill', badgeColor.bg)
+            .attr('pointer-events', 'none')
+
+          el.append('text')
+            .attr('x', badgeX0 + badgeWidth / 2)
+            .attr('y', badgeCenterY)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .attr('font-family', 'Lato, system-ui, sans-serif')
+            .attr('font-size', `${RIESGO_BADGE_FONT_SIZE}px`)
+            .attr('font-weight', '700')
+            .attr('fill', badgeColor.color)
+            .attr('pointer-events', 'none')
+            .text('Riesgo')
         }
       })
 

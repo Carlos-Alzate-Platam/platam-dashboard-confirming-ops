@@ -89,6 +89,7 @@ export default function App() {
                 onAddNew={() => openNewProcessModal('Proceso')}
                 columns={COLUMNS_PROCESOS}
                 defaultSortKey="orden"
+                highlightRiesgo
               />
             )}
 
@@ -102,6 +103,8 @@ export default function App() {
                 enableDragReorder
                 onReorder={batchUpdateCells}
                 enableEstadoFilter
+                hideAddButton
+                highlightRiesgo
               />
             )}
 

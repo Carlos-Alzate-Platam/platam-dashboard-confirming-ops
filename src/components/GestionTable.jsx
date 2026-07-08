@@ -5,9 +5,11 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   EDITABLE_FIELDS,
   esRiesgo,
+  esRiesgoVisibleEnTab,
   ESTADOS,
   ESTADO_STYLE,
   TIPO_STYLE,
+  URGENCIA_STYLE,
   parseResponsables,
   colorForResponsable,
   buildUpdateEntry,
@@ -48,7 +50,7 @@ function DragHandle({ attributes, listeners }) {
 // Fila arrastrable para Project manager. Reutiliza exactamente el mismo
 // renderCell que la fila estática — solo agrega el <tr> "sortable" de
 // dnd-kit y la celda del drag handle a la izquierda.
-function SortableRow({ process, columns, renderCell }) {
+function SortableRow({ process, columns, renderCell, className }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: process.sheetRow,
   })
@@ -62,7 +64,7 @@ function SortableRow({ process, columns, renderCell }) {
   }
 
   return (
-    <tr ref={setNodeRef} style={style}>
+    <tr ref={setNodeRef} style={style} className={className}>
       <td
         className="drag-handle-cell sticky-col"
         style={{ left: 0, width: DRAG_HANDLE_WIDTH, minWidth: DRAG_HANDLE_WIDTH, maxWidth: DRAG_HANDLE_WIDTH }}
@@ -341,7 +343,14 @@ function useStickyOffsets(columns, baseOffset) {
   }, [columns, baseOffset])
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton }) {
+// Fondo rojo sutil para filas de riesgo formal (Procesos, Project manager)
+// — se activa por prop porque no todas las vistas que usan GestionTable
+// deben resaltarlo (ej. Riesgos, donde toda fila ya es riesgo por diseño).
+function riskRowClassName(process, highlightRiesgo) {
+  return highlightRiesgo && esRiesgoVisibleEnTab(process.naturaleza) ? 'risk-row' : undefined
+}
+
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton, highlightRiesgo }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
@@ -782,8 +791,20 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
             />
           </td>
         )
-      // 'urgencia' no tiene case propio a propósito: cae en el default de
-      // solo lectura de abajo, sin onClick — es una fórmula de la hoja.
+      case 'urgencia': {
+        // Solo lectura (fórmula de la hoja): mismo estilo visual que los
+        // chips de Tipo/Estado, pero sin onClick ni cursor de edición.
+        const style = URGENCIA_STYLE[process.urgencia] || { bg: '#D1D5DB', color: '#1F2937' }
+        return (
+          <td key={col.key} data-label={col.label}>
+            {process.urgencia ? (
+              <span className="urgencia-chip" style={{ background: style.bg, color: style.color }}>
+                {process.urgencia}
+              </span>
+            ) : '—'}
+          </td>
+        )
+      }
       default:
         return <td key={col.key} data-label={col.label}>{process[col.key] || '—'}</td>
     }
@@ -829,7 +850,13 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
             <SortableContext items={visibleRows.map(p => p.sheetRow)} strategy={verticalListSortingStrategy}>
               <tbody>
                 {visibleRows.map(p => (
-                  <SortableRow key={p.sheetRow} process={p} columns={columns} renderCell={renderCell} />
+                  <SortableRow
+                    key={p.sheetRow}
+                    process={p}
+                    columns={columns}
+                    renderCell={renderCell}
+                    className={riskRowClassName(p, highlightRiesgo)}
+                  />
                 ))}
               </tbody>
             </SortableContext>
@@ -837,7 +864,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
         ) : (
           <tbody>
             {visibleRows.map(p => (
-              <tr key={p.sheetRow}>
+              <tr key={p.sheetRow} className={riskRowClassName(p, highlightRiesgo)}>
                 {columns.map(col => renderCell(p, col))}
               </tr>
             ))}

@@ -172,6 +172,15 @@ export const TIPO_STYLE = {
   Proceso: { bg: '#D1D5DB', color: '#1F2937' },
 }
 
+// Urgencia (Riesgos) es de solo lectura — el valor lo calcula una fórmula
+// en la propia hoja a partir de Probabilidad e Impacto. El color solo
+// refleja ese valor, no lo interpreta ni lo recalcula.
+export const URGENCIA_STYLE = {
+  Alta: { bg: '#EF4444', color: '#FFFFFF' },
+  Media: { bg: '#F59E0B', color: '#402B00' },
+  Baja: { bg: '#4AE54A', color: '#0A2410' },
+}
+
 // Paleta de colores para chips de Responsables — nunca rojo (reservado para
 // riesgo/Atención). Cada nombre se asigna de forma determinística vía hash,
 // así el mismo responsable siempre recibe el mismo color.

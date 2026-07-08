@@ -315,6 +315,31 @@ html, body, #root {
   background: var(--surface-2);
 }
 
+/* Filas de riesgo formal (Naturaleza = fraude/control o compliance/
+   regulatorio) en Procesos y Project manager — fondo rojo muy sutil en
+   toda la fila, adicional al badge de la columna Tipo, no lo reemplaza.
+   Se aplica sobre el <tr> para que las columnas no fijas lo hereden solas;
+   las columnas fijas necesitan su propio color sólido (no translúcido)
+   porque su fondo debe tapar el contenido que se desliza por debajo al
+   hacer scroll horizontal — por eso están precalculadas como hex sólido
+   equivalente a mezclar el mismo rojo sobre el fondo base. Van después de
+   zebra/hover en el archivo para ganar el empate de especificidad. */
+.process-table tbody tr.risk-row {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.process-table tbody tr.risk-row:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.process-table tbody tr.risk-row td.sticky-col {
+  background: #25142a;
+}
+
+.process-table tbody tr.risk-row:hover td.sticky-col {
+  background: #2c1d38;
+}
+
 /* Drag handle — reordenamiento por arrastre, solo en Project manager */
 .drag-handle-cell {
   text-align: center;
@@ -448,6 +473,18 @@ html, body, #root {
 
 .tipo-chip:hover {
   opacity: 0.8;
+}
+
+/* Urgencia chip (Riesgos) — mismo estilo visual que .tipo-chip, pero de
+   solo lectura: sin cursor de edición ni hover, porque el valor lo calcula
+   una fórmula de la hoja. */
+.urgencia-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Responsables chips */
@@ -931,6 +968,14 @@ html, body, #root {
     width: 100%;
     min-width: 0;
     max-width: none;
+    background: transparent;
+  }
+
+  /* El color sólido de .risk-row para columnas fijas solo tiene sentido
+     mientras la columna está superpuesta durante el scroll horizontal; en
+     tarjetas todas las celdas deben ser transparentes para heredar el
+     único tinte rojo del <tr>, igual que las demás celdas de la tarjeta. */
+  .process-table tbody tr.risk-row td.sticky-col {
     background: transparent;
   }
 
