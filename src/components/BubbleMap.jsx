@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import { esAtencion, esRiesgoVisibleEnTab, parseResponsables, colorForResponsable } from '../constants'
+import { esAtencion, esPropuesto, esRiesgoVisibleEnTab, parseResponsables, colorForResponsable } from '../constants'
 
 const RADIUS = 44
 // Tamaño por Severidad (1/2/3) para procesos de Atención. Los saltos son
@@ -25,6 +25,13 @@ const SEVERIDAD_COLOR = {
 const NEUTRAL_FILL = '#1E2A50'
 const NEUTRAL_STROKE = '#3A4278'
 const NEUTRAL_TEXT = '#E2E8F0'
+// Propuesto — mismo tamaño y relleno de fondo que Proceso, pero con borde
+// punteado azul/morado (ver TIPO_STYLE.Propuesto) para transmitir "pendiente
+// de confirmar contra la realidad", sin usar rojo ni el estilo sólido de Proceso.
+const PROPUESTO_FILL = '#1E2A50'
+const PROPUESTO_STROKE = '#818CF8'
+const PROPUESTO_TEXT = '#C7D2FE'
+const PROPUESTO_DASH = '4 3'
 const ARROW_COLOR = '#8B96AE'
 const ARROW_OPACITY = 0.35
 
@@ -55,13 +62,16 @@ function severidadNivel(d) {
 }
 
 function radiusOf(d) {
+  // Proceso y Propuesto comparten el mismo tamaño uniforme; solo Atención
+  // escala según Severidad.
   if (!esAtencion(d.tipo)) return RADIUS
   return SEVERIDAD_RADIUS[severidadNivel(d)]
 }
 
 function colorsOf(d) {
-  if (!esAtencion(d.tipo)) return { fill: NEUTRAL_FILL, stroke: NEUTRAL_STROKE, text: NEUTRAL_TEXT }
-  return SEVERIDAD_COLOR[severidadNivel(d)]
+  if (esAtencion(d.tipo)) return SEVERIDAD_COLOR[severidadNivel(d)]
+  if (esPropuesto(d.tipo)) return { fill: PROPUESTO_FILL, stroke: PROPUESTO_STROKE, text: PROPUESTO_TEXT, dashed: true }
+  return { fill: NEUTRAL_FILL, stroke: NEUTRAL_STROKE, text: NEUTRAL_TEXT }
 }
 
 export default function BubbleMap({ processes, onSelect, selectedId }) {
@@ -175,6 +185,7 @@ export default function BubbleMap({ processes, onSelect, selectedId }) {
         .attr('fill', d => colorsOf(d).fill)
         .attr('stroke', d => colorsOf(d).stroke)
         .attr('stroke-width', 1.5)
+        .attr('stroke-dasharray', d => colorsOf(d).dashed ? PROPUESTO_DASH : null)
         .attr('opacity', 0.9)
 
       // Glow para burbujas de atención

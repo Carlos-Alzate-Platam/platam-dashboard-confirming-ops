@@ -12,6 +12,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('procesos')
   const [selectedProcess, setSelectedProcess] = useState(null)
   const [newProcessDefaultTipo, setNewProcessDefaultTipo] = useState(null)
+  // Solo se usa cuando el formulario se abrió desde el botón "+" de insertar
+  // entre dos filas (vista Procesos) — ver openInsertRowModal más abajo.
+  // null cuando el formulario se abrió desde "+ Nuevo proceso" (alta normal
+  // al final de la lista, sin renumerar nada).
+  const [insertPosition, setInsertPosition] = useState(null)
 
   const pmProcesses = useMemo(
     () => processes.filter(p => p.tipo === 'Atención'),
@@ -35,8 +40,47 @@ export default function App() {
     setNewProcessDefaultTipo(defaultTipo)
   }
 
+  // Botón "+" entre dos filas consecutivas (vista Procesos, ordenada por
+  // Orden). El nuevo Orden toma el valor de la fila de abajo (ej. entre 9 y
+  // 10, la nueva queda en 10) y todas las filas con Orden >= ese valor se
+  // corren +1 — ver handleCreateProcess, que aplica ese renumerado en un solo
+  // batch antes de crear la fila nueva.
+  function openInsertRowModal(beforeProcess, afterProcess) {
+    const targetOrden = parseInt(afterProcess?.orden, 10)
+    if (Number.isNaN(targetOrden)) return
+
+    const renumberUpdates = processes
+      .filter(p => {
+        const n = parseInt(p.orden, 10)
+        return !Number.isNaN(n) && n >= targetOrden
+      })
+      .map(p => ({ sheetRow: p.sheetRow, field: 'orden', value: String(parseInt(p.orden, 10) + 1) }))
+
+    setInsertPosition({ targetOrden, renumberUpdates })
+    setNewProcessDefaultTipo('Propuesto')
+  }
+
   function closeNewProcessModal() {
     setNewProcessDefaultTipo(null)
+    setInsertPosition(null)
+  }
+
+  // Alta normal ("+ Nuevo proceso") y alta por inserción entre filas
+  // comparten el mismo formulario (NewProcessModal) — esta función es la
+  // única diferencia: si viene de insertar, primero renumera en batch las
+  // filas afectadas y luego crea la fila nueva con el Orden que quedó libre.
+  async function handleCreateProcess(form) {
+    if (insertPosition) {
+      if (insertPosition.renumberUpdates.length) {
+        await batchUpdateCells(insertPosition.renumberUpdates)
+        // Evita repetir el renumerado si el usuario reintenta el envío tras
+        // un error de red en createProcess más abajo.
+        setInsertPosition(prev => (prev ? { ...prev, renumberUpdates: [] } : prev))
+      }
+      await createProcess({ ...form, orden: insertPosition.targetOrden })
+    } else {
+      await createProcess(form)
+    }
   }
 
   async function handleLogout() {
@@ -90,6 +134,8 @@ export default function App() {
                 columns={COLUMNS_PROCESOS}
                 defaultSortKey="orden"
                 highlightRiesgo
+                enableInsertRow
+                onInsertRow={openInsertRowModal}
               />
             )}
 
@@ -135,6 +181,10 @@ export default function App() {
                       <div className="legend-dot" style={{ background: '#3A4278' }} />
                       Proceso
                     </div>
+                    <div className="legend-item">
+                      <div className="legend-dot legend-dot-dashed" style={{ borderColor: '#818CF8' }} />
+                      Propuesto
+                    </div>
                   </div>
                   <div className="map-hint">Haz clic en una burbuja para ver el detalle</div>
                 </div>
@@ -153,7 +203,7 @@ export default function App() {
       {newProcessDefaultTipo && (
         <NewProcessModal
           defaultTipo={newProcessDefaultTipo}
-          onCreate={createProcess}
+          onCreate={handleCreateProcess}
           onClose={closeNewProcessModal}
         />
       )}

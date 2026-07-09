@@ -249,6 +249,16 @@ html, body, #root {
   }
 }
 
+/* Zebra explícito por clase — solo en Procesos (enableInsertRow), donde las
+   filas de inserción (.insert-gap-row) intercaladas entre cada fila real
+   desalinean el nth-child(even) de arriba (todas las filas reales quedan en
+   posición impar). Se calcula en JS sobre el índice real, no el del DOM. */
+@media (min-width: 641px) {
+  .process-table tbody tr.row-zebra {
+    background: var(--surface);
+  }
+}
+
 .process-table tbody tr:hover {
   background: var(--surface-2);
 }
@@ -309,6 +319,10 @@ html, body, #root {
   .process-table tbody tr:nth-child(even) td.sticky-col {
     background: var(--surface);
   }
+
+  .process-table tbody tr.row-zebra td.sticky-col {
+    background: var(--surface);
+  }
 }
 
 .process-table tbody tr:hover td.sticky-col {
@@ -338,6 +352,68 @@ html, body, #root {
 
 .process-table tbody tr.risk-row:hover td.sticky-col {
   background: #2c1d38;
+}
+
+/* Botón "+" para insertar una fila entre dos existentes — solo en Procesos.
+   La fila de separación no ocupa espacio visual (altura ~0, sin borde ni
+   fondo propio); el botón vive en una zona de hover más alta que se
+   superpone sobre el límite entre las dos filas reales, sin desplazar el
+   layout de ninguna de ellas. */
+.process-table tbody tr.insert-gap-row {
+  border-bottom: none;
+}
+
+.process-table tbody tr.insert-gap-row:hover {
+  background: transparent;
+}
+
+.process-table tbody tr.insert-gap-row td.insert-gap-cell {
+  padding: 0;
+  border: none;
+  height: 0;
+  line-height: 0;
+  position: relative;
+}
+
+.insert-gap-hit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -11px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.insert-row-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--cyan);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.insert-gap-hit:hover .insert-row-btn {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .process-table tbody tr.insert-gap-row {
+    display: none;
+  }
 }
 
 /* Drag handle — reordenamiento por arrastre, solo en Project manager */
@@ -714,6 +790,11 @@ html, body, #root {
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.legend-dot-dashed {
+  background: transparent;
+  border: 2px dashed;
 }
 
 /* New process modal */

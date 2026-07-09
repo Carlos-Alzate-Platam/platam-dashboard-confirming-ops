@@ -33,6 +33,7 @@ export const TRATAMIENTO = [
 export const TIPO_PROCESO = [
   'Proceso',
   'Atención',
+  'Propuesto',
 ]
 
 export const PROBABILIDAD = ['Alta', 'Media', 'Baja']
@@ -157,6 +158,10 @@ export function esAtencion(tipo) {
   return Boolean(tipo) && normalizarTexto(tipo) === 'atencion'
 }
 
+export function esPropuesto(tipo) {
+  return Boolean(tipo) && normalizarTexto(tipo) === 'propuesto'
+}
+
 export const ESTADO_STYLE = {
   Resuelto: { color: '#4AE54A', bg: '#0E2A14' },
   'En piloto': { color: '#2ADBA4', bg: '#0A2420' },
@@ -166,10 +171,14 @@ export const ESTADO_STYLE = {
   Bloqueado: { color: '#6B7280', bg: '#1A1E2A' },
 }
 
-// Rojo queda reservado exclusivamente para Tipo = Atención.
+// Rojo queda reservado exclusivamente para Tipo = Atención. Propuesto usa
+// borde punteado azul/morado (sin relleno sólido) para diferenciarse tanto
+// del rojo de Atención como del gris sólido de Proceso — transmite "aún sin
+// confirmar contra la realidad".
 export const TIPO_STYLE = {
   Atención: { bg: '#EF4444', color: '#FFFFFF' },
   Proceso: { bg: '#D1D5DB', color: '#1F2937' },
+  Propuesto: { bg: 'rgba(129, 140, 248, 0.08)', color: '#C7D2FE', border: '1.5px dashed #818CF8' },
 }
 
 // Urgencia (Riesgos) es de solo lectura — el valor lo calcula una fórmula

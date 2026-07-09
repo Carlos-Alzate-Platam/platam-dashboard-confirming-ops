@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, Fragment } from 'react'
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -169,7 +169,7 @@ function TipoCell({ process, editCell, editValue, setEditValue, onStartEdit, onS
   return (
     <span
       className="tipo-chip"
-      style={{ background: style.bg, color: style.color }}
+      style={{ background: style.bg, color: style.color, border: style.border }}
       onClick={() => onStartEdit(process, 'tipo')}
       title="Clic para editar"
     >
@@ -350,7 +350,7 @@ function riskRowClassName(process, highlightRiesgo) {
   return highlightRiesgo && esRiesgoVisibleEnTab(process.naturaleza) ? 'risk-row' : undefined
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton, highlightRiesgo }) {
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton, highlightRiesgo, enableInsertRow, onInsertRow }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
@@ -863,11 +863,43 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
           </DndContext>
         ) : (
           <tbody>
-            {visibleRows.map(p => (
-              <tr key={p.sheetRow} className={riskRowClassName(p, highlightRiesgo)}>
-                {columns.map(col => renderCell(p, col))}
-              </tr>
-            ))}
+            {visibleRows.map((p, i) => {
+              // El botón "+" para insertar entre dos filas solo tiene sentido
+              // cuando la tabla está ordenada por Orden — es la única columna
+              // cuya secuencia visual coincide con la posición que se va a
+              // renumerar. Al reordenar por otra columna, se oculta.
+              const showInsertGap =
+                enableInsertRow && sortKey === 'orden' && i < visibleRows.length - 1
+              return (
+                <Fragment key={p.sheetRow}>
+                  <tr
+                    className={[
+                      riskRowClassName(p, highlightRiesgo),
+                      enableInsertRow && i % 2 === 1 ? 'row-zebra' : null,
+                    ].filter(Boolean).join(' ') || undefined}
+                  >
+                    {columns.map(col => renderCell(p, col))}
+                  </tr>
+                  {showInsertGap && (
+                    <tr className="insert-gap-row">
+                      <td colSpan={columns.length} className="insert-gap-cell">
+                        <span className="insert-gap-hit">
+                          <button
+                            type="button"
+                            className="insert-row-btn"
+                            aria-label="Insertar proceso aquí"
+                            title="Insertar proceso aquí"
+                            onClick={() => onInsertRow(p, visibleRows[i + 1])}
+                          >
+                            +
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
           </tbody>
         )}
       </table>

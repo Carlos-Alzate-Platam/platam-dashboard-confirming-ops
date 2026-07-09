@@ -135,7 +135,7 @@ function sendError(res, err) {
   })
 }
 
-const TIPOS_VALIDOS = ['Proceso', 'Atención']
+const TIPOS_VALIDOS = ['Proceso', 'Atención', 'Propuesto']
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -173,6 +173,7 @@ module.exports = async function handler(req, res) {
     tratamiento = '',
     estado = '',
     notas = '',
+    orden: ordenOverride,
   } = body
 
   if (!nombre || !nombre.trim()) {
@@ -191,6 +192,18 @@ module.exports = async function handler(req, res) {
     })
   }
 
+  let parsedOrdenOverride = null
+  if (ordenOverride !== undefined && ordenOverride !== null && String(ordenOverride).trim() !== '') {
+    parsedOrdenOverride = parseInt(ordenOverride, 10)
+    if (Number.isNaN(parsedOrdenOverride) || parsedOrdenOverride < 1) {
+      return res.status(400).json({
+        error: `Orden inválido: "${ordenOverride}".`,
+        code: 'INVALID_ORDEN',
+        detail: 'Orden debe ser un número entero positivo.',
+      })
+    }
+  }
+
   let auth
   try {
     auth = buildAuth()
@@ -201,19 +214,26 @@ module.exports = async function handler(req, res) {
   const sheets = google.sheets({ version: 'v4', auth })
 
   let nextOrden = 1
-  try {
-    const ordenResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_TAB}!A2:A`,
-    })
-    const ordenValues = (ordenResponse.data.values || []).flat()
-    const maxOrden = ordenValues.reduce((max, v) => {
-      const n = parseInt(v, 10)
-      return Number.isNaN(n) ? max : Math.max(max, n)
-    }, 0)
-    nextOrden = maxOrden + 1
-  } catch (err) {
-    return sendError(res, classifyGoogleError(err))
+  if (parsedOrdenOverride !== null) {
+    // Viene del flujo "+" de insertar entre dos filas (vista Procesos): el
+    // llamador ya renumeró en batch las filas con Orden >= este valor, así
+    // que aquí solo se usa el hueco que quedó libre, sin recalcular el máximo.
+    nextOrden = parsedOrdenOverride
+  } else {
+    try {
+      const ordenResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${SHEET_TAB}!A2:A`,
+      })
+      const ordenValues = (ordenResponse.data.values || []).flat()
+      const maxOrden = ordenValues.reduce((max, v) => {
+        const n = parseInt(v, 10)
+        return Number.isNaN(n) ? max : Math.max(max, n)
+      }, 0)
+      nextOrden = maxOrden + 1
+    } catch (err) {
+      return sendError(res, classifyGoogleError(err))
+    }
   }
 
   let appendResponse

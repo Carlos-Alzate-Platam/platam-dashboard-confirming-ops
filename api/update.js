@@ -4,9 +4,14 @@ const { isAuthenticated } = require('./_lib/session')
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_t64uj3iFNSNl-_SNGotD5bPb1a81QVA'
 const SHEET_TAB = process.env.SHEET_TAB || 'Seguimiento'
 
-// Orden (columna A) y Urgencia (columna S, fórmula de la hoja) se dejan
-// fuera a propósito: son de solo lectura.
+// Urgencia (columna S, fórmula de la hoja) se deja fuera a propósito: es de
+// solo lectura. Orden (columna A) sí se incluye, pero solo para el
+// renumerado automático del flujo "+" de insertar fila entre dos existentes
+// (vista Procesos) — nunca se expone como celda editable en la tabla
+// (ver EDITABLE_FIELDS en src/constants.js, que la excluye a propósito).
+// Debe coincidir exactamente con el mapeo de api/batch-update.js.
 const FIELD_TO_COLUMN = {
+  orden: 'A',
   ordenSecundario: 'B',
   nombre: 'C',
   tipo: 'D',
