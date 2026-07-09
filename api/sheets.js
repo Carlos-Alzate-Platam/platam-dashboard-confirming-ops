@@ -125,6 +125,43 @@ function sendError(res, err) {
   })
 }
 
+// rows[0] es el encabezado; rows[i] para i>=1 es dato en sheet row i+1
+// Columnas: A Orden, B Orden_02, C Nombre, D Tipo, E Severidad,
+// F Descripción, G Responsables, H Naturaleza, I Tipo Intervención,
+// J Tratamiento, K Estado, L Notas, M Update 1, N Update 2, O Update 3,
+// P KPIs, Q Probabilidad, R Impacto, S Urgencia (fórmula de la hoja,
+// solo lectura), T Control Preventivo, U Control Detectivo,
+// V Control Correctivo, W Frecuencia Revisión, X Responsable Monitoreo
+function mapRow(row, sheetRow) {
+  return {
+    sheetRow,
+    orden: row[0] || '',
+    ordenSecundario: row[1] || '',
+    nombre: row[2] || '',
+    tipo: row[3] || '',
+    severidad: row[4] || '',
+    descripcion: row[5] || '',
+    responsables: row[6] || '',
+    naturaleza: row[7] || '',
+    tipoIntervencion: row[8] || '',
+    tratamiento: row[9] || '',
+    estado: row[10] || '',
+    notas: row[11] || '',
+    update1: row[12] || '',
+    update2: row[13] || '',
+    update3: row[14] || '',
+    kpis: row[15] || '',
+    probabilidad: row[16] || '',
+    impacto: row[17] || '',
+    urgencia: row[18] || '',
+    controlPreventivo: row[19] || '',
+    controlDetectivo: row[20] || '',
+    controlCorrectivo: row[21] || '',
+    frecuenciaRevision: row[22] || '',
+    responsableMonitoreo: row[23] || '',
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
 
@@ -136,6 +173,11 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'No autenticado.', code: 'UNAUTHENTICATED' })
   }
 
+  // Parseo manual del query string (en vez de depender de req.query) para
+  // que este handler funcione igual bajo el runtime de Vercel y bajo un
+  // http.Server plano.
+  const sheetRowParam = new URL(req.url, 'http://localhost').searchParams.get('sheetRow')
+
   let auth
   try {
     auth = buildAuth()
@@ -143,9 +185,38 @@ module.exports = async function handler(req, res) {
     return sendError(res, err)
   }
 
+  const sheets = google.sheets({ version: 'v4', auth })
+
+  // Consulta de una sola fila — usada tras editar Probabilidad/Impacto en
+  // la vista Riesgos para traer el valor de Urgencia recién recalculado por
+  // la fórmula de la hoja, sin releer la hoja completa (ver refetchRowUrgencia
+  // en src/hooks/useSheets.js).
+  if (sheetRowParam) {
+    const sheetRow = parseInt(sheetRowParam, 10)
+    if (Number.isNaN(sheetRow) || sheetRow < 2) {
+      return res.status(400).json({
+        error: `sheetRow inválido: "${sheetRowParam}".`,
+        code: 'INVALID_SHEET_ROW',
+        detail: 'sheetRow debe ser un número >= 2 (1 sería el encabezado).',
+      })
+    }
+
+    let rowResponse
+    try {
+      rowResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${SHEET_TAB}!A${sheetRow}:X${sheetRow}`,
+      })
+    } catch (err) {
+      return sendError(res, classifyGoogleError(err))
+    }
+
+    const row = (rowResponse.data.values || [])[0] || []
+    return res.json({ process: mapRow(row, sheetRow) })
+  }
+
   let response
   try {
-    const sheets = google.sheets({ version: 'v4', auth })
     response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_TAB}!A:X`,
@@ -157,42 +228,9 @@ module.exports = async function handler(req, res) {
   const rows = response.data.values || []
   if (rows.length < 2) return res.json([])
 
-  // rows[0] es el encabezado; rows[i] para i>=1 es dato en sheet row i+1
-  // Columnas: A Orden, B Orden_02, C Nombre, D Tipo, E Severidad,
-  // F Descripción, G Responsables, H Naturaleza, I Tipo Intervención,
-  // J Tratamiento, K Estado, L Notas, M Update 1, N Update 2, O Update 3,
-  // P KPIs, Q Probabilidad, R Impacto, S Urgencia (fórmula de la hoja,
-  // solo lectura), T Control Preventivo, U Control Detectivo,
-  // V Control Correctivo, W Frecuencia Revisión, X Responsable Monitoreo
   const processes = rows
     .slice(1)
-    .map((row, i) => ({
-      sheetRow: i + 2, // fila real en Sheets (1-indexed, +1 por encabezado)
-      orden: row[0] || '',
-      ordenSecundario: row[1] || '',
-      nombre: row[2] || '',
-      tipo: row[3] || '',
-      severidad: row[4] || '',
-      descripcion: row[5] || '',
-      responsables: row[6] || '',
-      naturaleza: row[7] || '',
-      tipoIntervencion: row[8] || '',
-      tratamiento: row[9] || '',
-      estado: row[10] || '',
-      notas: row[11] || '',
-      update1: row[12] || '',
-      update2: row[13] || '',
-      update3: row[14] || '',
-      kpis: row[15] || '',
-      probabilidad: row[16] || '',
-      impacto: row[17] || '',
-      urgencia: row[18] || '',
-      controlPreventivo: row[19] || '',
-      controlDetectivo: row[20] || '',
-      controlCorrectivo: row[21] || '',
-      frecuenciaRevision: row[22] || '',
-      responsableMonitoreo: row[23] || '',
-    }))
+    .map((row, i) => mapRow(row, i + 2)) // fila real en Sheets (1-indexed, +1 por encabezado)
     .filter(p => p.nombre || p.descripcion)
 
   res.json(processes)

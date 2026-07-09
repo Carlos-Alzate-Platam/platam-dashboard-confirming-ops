@@ -1,10 +1,9 @@
 export const NATURALEZA_RIESGO = [
-  'Riesgo de fraude o control',
+  'Riesgo operativo',
   'Riesgo de compliance o regulatorio',
-  'Cuello de botella operativo',
-  'Vacío de proceso',
-  'Dependencia de persona clave',
-  'Deuda tecnológica',
+  'Riesgo de crédito',
+  'Riesgo de liquidez',
+  'Sin riesgo asociado',
 ]
 
 export const TIPO_INTERVENCION = [
@@ -12,6 +11,7 @@ export const TIPO_INTERVENCION = [
   'Rediseño de Control',
   'Definición Organizacional',
   'Solo documentación',
+  'Transferencia de riesgo',
 ]
 
 export const ESTADOS = [
@@ -42,16 +42,15 @@ export const IMPACTO = ['Alto', 'Medio', 'Bajo']
 
 export const FRECUENCIA_REVISION = ['Semanal', 'Mensual', 'Trimestral', 'Semestral', 'Sin definir']
 
-// Únicas dos naturalezas que hacen que una fila aparezca en la vista
-// "Riesgos" — se recalcula en cada carga a partir de este valor, así que
-// una fila deja de mostrarse ahí en cuanto su Naturaleza cambia a otra cosa.
-export const NATURALEZA_RIESGOS_VISIBLES = [
-  'Riesgo de fraude o control',
-  'Riesgo de compliance o regulatorio',
-]
-
+// Regla de exclusión (no lista fija): cualquier Naturaleza no vacía y
+// distinta de "Sin riesgo asociado" cuenta como riesgo formal. Así una
+// categoría de riesgo nueva que se agregue a NATURALEZA_RIESGO queda
+// cubierta automáticamente sin tocar esta función. Determina: resaltado de
+// fila en Procesos/Project manager, qué filas aparecen en la vista
+// "Riesgos" y el badge "Riesgo" del Mapa de procesos.
 export function esRiesgoVisibleEnTab(naturaleza) {
-  return NATURALEZA_RIESGOS_VISIBLES.includes(naturaleza)
+  const valor = (naturaleza || '').trim()
+  return Boolean(valor) && valor !== 'Sin riesgo asociado'
 }
 
 // Columnas compartidas por ambas vistas de tabla; solo cambia cuál de las

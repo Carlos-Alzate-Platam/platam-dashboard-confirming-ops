@@ -66,6 +66,32 @@ export function useSheets() {
 
   useEffect(() => { fetchProcesses() }, [fetchProcesses])
 
+  // Urgencia (vista Riesgos) es una fórmula de la propia hoja a partir de
+  // Probabilidad e Impacto — el dashboard nunca la escribe, así que tras
+  // guardar uno de esos dos campos hay que volver a leerla desde Sheets para
+  // reflejar el valor recalculado. Se espera un instante antes de leer para
+  // darle tiempo a la fórmula a recalcular, y se consulta solo esa fila
+  // (no toda la hoja) vía /api/sheets?sheetRow=. Los errores quedan en
+  // consola nada más: el guardado de Probabilidad/Impacto ya se confirmó,
+  // esto es solo una actualización de pantalla.
+  const refetchRowUrgencia = useCallback(async sheetRow => {
+    await new Promise(resolve => setTimeout(resolve, 700))
+    try {
+      const res = await fetch(`/api/sheets?sheetRow=${sheetRow}`)
+      if (!res.ok) {
+        console.error('[Platam API] No se pudo refrescar Urgencia:', await extractApiError(res))
+        return
+      }
+      const { process } = await res.json()
+      if (!process) return
+      setProcesses(prev =>
+        prev.map(p => (p.sheetRow === sheetRow ? { ...p, urgencia: process.urgencia } : p))
+      )
+    } catch (networkErr) {
+      console.error('[Platam API] Error de red al refrescar Urgencia:', networkErr)
+    }
+  }, [])
+
   const updateCell = useCallback(async (sheetRow, field, value) => {
     setProcesses(prev =>
       prev.map(p => (p.sheetRow === sheetRow ? { ...p, [field]: value } : p))
@@ -89,7 +115,11 @@ export function useSheets() {
       await fetchProcesses()
       throw err
     }
-  }, [fetchProcesses])
+
+    if (field === 'probabilidad' || field === 'impacto') {
+      refetchRowUrgencia(sheetRow)
+    }
+  }, [fetchProcesses, refetchRowUrgencia])
 
   // Aplica varios cambios de una sola vez (ej. reordenar por drag & drop en
   // Project manager) con una sola llamada batch a Sheets. Optimista: aplica
