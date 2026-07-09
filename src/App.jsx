@@ -5,10 +5,17 @@ import GestionTable from './components/GestionTable'
 import BubbleMap from './components/BubbleMap'
 import ProcessPanel from './components/ProcessPanel'
 import NewProcessModal from './components/NewProcessModal'
-import { COLUMNS_PROCESOS, COLUMNS_PM, COLUMNS_RIESGOS, esRiesgoVisibleEnTab } from './constants'
+import {
+  COLUMNS_PROCESOS,
+  COLUMNS_PM,
+  COLUMNS_RIESGOS,
+  esRiesgoVisibleEnTab,
+  ordenarPorOrdenAscendente,
+  buildRenumeracionSecuencial,
+} from './constants'
 
 export default function App() {
-  const { processes, loading, error, retry, refreshSilently, updateCell, batchUpdateCells, createProcess } = useSheets()
+  const { processes, loading, error, retry, refreshSilently, updateCell, batchUpdateCells, createProcess, deleteRow } = useSheets()
   const [activeTab, setActiveTab] = useState('procesos')
   const [selectedProcess, setSelectedProcess] = useState(null)
   const [newProcessDefaultTipo, setNewProcessDefaultTipo] = useState(null)
@@ -83,6 +90,45 @@ export default function App() {
     }
   }
 
+  // Botón de basura por fila (vista Procesos): confirma, renumera en batch
+  // las filas restantes que quedan después del hueco (misma lógica de
+  // renumerado que openInsertRowModal/handleRenumerar, ver constants.js) y
+  // solo entonces borra la fila en Sheets. El renumerado se escribe antes de
+  // borrar para que sus referencias a sheetRow sigan siendo válidas — borrar
+  // la fila después no las invalida, solo desplaza filas hacia arriba.
+  async function handleDeleteRow(process) {
+    const nombre = process.nombre || 'este proceso'
+    if (!window.confirm(`¿Seguro que quieres borrar "${nombre}"? Esta acción no se puede deshacer.`)) {
+      return
+    }
+
+    const restantes = processes.filter(p => p.sheetRow !== process.sheetRow)
+    const renumberUpdates = buildRenumeracionSecuencial(ordenarPorOrdenAscendente(restantes))
+
+    try {
+      if (renumberUpdates.length) {
+        await batchUpdateCells(renumberUpdates)
+      }
+      await deleteRow(process.sheetRow)
+    } catch (err) {
+      console.error('Error al borrar el proceso:', err)
+    }
+  }
+
+  // Botón "Renumerar" (vista Procesos): respaldo manual para corregir Orden
+  // ante cualquier desincronización (ediciones directas en Sheets u otra
+  // causa) — misma lógica de renumerado que usan el botón "+" y la basura.
+  async function handleRenumerar() {
+    const renumberUpdates = buildRenumeracionSecuencial(ordenarPorOrdenAscendente(processes))
+    if (!renumberUpdates.length) return
+
+    try {
+      await batchUpdateCells(renumberUpdates)
+    } catch (err) {
+      console.error('Error al renumerar:', err)
+    }
+  }
+
   async function handleLogout() {
     try {
       await fetch('/api/auth', { method: 'DELETE' })
@@ -136,6 +182,10 @@ export default function App() {
                 highlightRiesgo
                 enableInsertRow
                 onInsertRow={openInsertRowModal}
+                enableDeleteRow
+                onDeleteRow={handleDeleteRow}
+                enableRenumerar
+                onRenumerar={handleRenumerar}
               />
             )}
 

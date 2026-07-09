@@ -158,6 +158,39 @@ export function useSheets() {
     }
   }, [])
 
+  // Borra una fila en Sheets (solo vista Procesos) y la retira de la lista en
+  // memoria. Optimista: quita la fila de `processes` antes de llamar a la API
+  // y, si falla, revierte exactamente al estado previo — mismo patrón que
+  // batchUpdateCells. El renumerado de Orden de las filas restantes se hace
+  // aparte con batchUpdateCells antes de llamar a esta función (ver
+  // handleDeleteRow en App.jsx), para no duplicar esa lógica.
+  const deleteRow = useCallback(async (sheetRow) => {
+    let previous
+    setProcesses(prev => {
+      previous = prev
+      return prev.filter(p => p.sheetRow !== sheetRow)
+    })
+
+    let res
+    try {
+      res = await fetch('/api/delete-row', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sheetRow }),
+      })
+    } catch (networkErr) {
+      console.error('[Platam API] Error de red al llamar /api/delete-row:', networkErr)
+      setProcesses(previous)
+      throw new Error('No se pudo conectar con el servidor al intentar borrar el proceso.')
+    }
+
+    if (!res.ok) {
+      const err = await extractApiError(res)
+      setProcesses(previous)
+      throw err
+    }
+  }, [])
+
   const createProcess = useCallback(async (fields) => {
     let res
     try {
@@ -178,5 +211,5 @@ export function useSheets() {
     return process
   }, [])
 
-  return { processes, loading, error, retry: fetchProcesses, refreshSilently, updateCell, batchUpdateCells, createProcess }
+  return { processes, loading, error, retry: fetchProcesses, refreshSilently, updateCell, batchUpdateCells, createProcess, deleteRow }
 }

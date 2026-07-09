@@ -350,7 +350,7 @@ function riskRowClassName(process, highlightRiesgo) {
   return highlightRiesgo && esRiesgoVisibleEnTab(process.naturaleza) ? 'risk-row' : undefined
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton, highlightRiesgo, enableInsertRow, onInsertRow }) {
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton, highlightRiesgo, enableInsertRow, onInsertRow, enableDeleteRow, onDeleteRow, enableRenumerar, onRenumerar }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
@@ -508,7 +508,30 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
       case 'orden':
         return (
           <td key={col.key} data-label={col.label} className={stickyClassName(col, 'cell-priority')} style={stickyStyle(col)}>
-            {process.orden || '—'}
+            {enableDeleteRow ? (
+              <span className="orden-cell-content">
+                <span>{process.orden || '—'}</span>
+                <button
+                  type="button"
+                  className="delete-row-btn"
+                  aria-label={`Borrar ${process.nombre || 'proceso'}`}
+                  title="Borrar proceso"
+                  onClick={() => onDeleteRow(process)}
+                >
+                  <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden="true">
+                    <path
+                      d="M1.5 3.5H11.5M4.5 3.5V2C4.5 1.44772 4.94772 1 5.5 1H7.5C8.05228 1 8.5 1.44772 8.5 2V3.5M5.5 6.5V10.5M7.5 6.5V10.5M2.5 3.5L3 12C3 12.5523 3.44772 13 4 13H9C9.55228 13 10 12.5523 10 12L10.5 3.5"
+                      stroke="currentColor"
+                      strokeWidth="1.1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </span>
+            ) : (
+              process.orden || '—'
+            )}
           </td>
         )
       case 'ordenSecundario':
@@ -814,8 +837,15 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
     <div className="table-wrapper">
       <div className="table-toolbar">
         {saving ? <p className="saving-indicator">Guardando en Sheets...</p> : <span />}
-        {!hideAddButton && (
-          <button className="add-process-btn" onClick={onAddNew}>+ Nuevo proceso</button>
+        {(enableRenumerar || !hideAddButton) && (
+          <div className="table-toolbar-actions">
+            {enableRenumerar && (
+              <button type="button" className="renumerar-btn" onClick={onRenumerar}>Renumerar</button>
+            )}
+            {!hideAddButton && (
+              <button className="add-process-btn" onClick={onAddNew}>+ Nuevo proceso</button>
+            )}
+          </div>
         )}
       </div>
       {enableEstadoFilter && (

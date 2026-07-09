@@ -53,6 +53,41 @@ export function esRiesgoVisibleEnTab(naturaleza) {
   return Boolean(valor) && valor !== 'Sin riesgo asociado'
 }
 
+// Orden numérico ascendente con vacíos/no-numéricos al final — mismo
+// criterio que ya usa la columna Orden en la tabla (ver NUMERIC_SORT_KEYS
+// en GestionTable). Se reutiliza para calcular el renumerado secuencial
+// (botón "Renumerar" y borrar fila en Procesos, ver App.jsx) de forma
+// independiente al estado de orden/dirección de la tabla en un momento dado.
+export function ordenarPorOrdenAscendente(processes) {
+  return [...processes].sort((a, b) => {
+    const aNum = parseInt(a.orden, 10)
+    const bNum = parseInt(b.orden, 10)
+    const aEmpty = Number.isNaN(aNum)
+    const bEmpty = Number.isNaN(bNum)
+    if (aEmpty && bEmpty) return 0
+    if (aEmpty) return 1
+    if (bEmpty) return -1
+    return aNum - bNum
+  })
+}
+
+// A partir de una lista ya ordenada (ordenarPorOrdenAscendente), calcula qué
+// filas necesitan un nuevo valor de Orden para quedar secuenciales (1, 2,
+// 3...) — solo incluye las que realmente cambian. Única lógica de
+// renumerado por lote: la usan tanto el botón "Renumerar" como borrar una
+// fila (para cerrar el hueco en las filas restantes), sobre listas de
+// entrada distintas pero con el mismo cálculo.
+export function buildRenumeracionSecuencial(processesEnOrden) {
+  const changes = []
+  processesEnOrden.forEach((p, i) => {
+    const target = String(i + 1)
+    if ((p.orden || '') !== target) {
+      changes.push({ sheetRow: p.sheetRow, field: 'orden', value: target })
+    }
+  })
+  return changes
+}
+
 // Columnas compartidas por ambas vistas de tabla; solo cambia cuál de las
 // dos columnas de orden va primero (Orden en Procesos, Orden_02 en PM).
 // `sticky: true` marca las columnas fijas al hacer scroll horizontal — su

@@ -276,6 +276,50 @@ html, body, #root {
   color: var(--text-dim);
 }
 
+/* Ícono de basura junto a Orden (vista Procesos). Reserva su espacio en el
+   flex siempre (solo cambia opacity/pointer-events), así nunca desplaza el
+   número de Orden ni el ancho fijo de la columna al aparecer/desaparecer. */
+.orden-cell-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.delete-row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, color 0.15s, background 0.15s;
+}
+
+.process-table tbody tr:hover .delete-row-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.delete-row-btn:hover {
+  color: var(--red);
+  background: var(--red-dim);
+}
+
+@media (max-width: 640px) {
+  .delete-row-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .cell-name {
   font-weight: 700;
 }
@@ -472,6 +516,12 @@ html, body, #root {
   min-height: 28px;
 }
 
+.table-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .add-process-btn {
   background: var(--lime);
   border: none;
@@ -487,6 +537,27 @@ html, body, #root {
 
 .add-process-btn:hover {
   opacity: 0.85;
+}
+
+/* Botón "Renumerar" (vista Procesos) — respaldo manual del renumerado
+   secuencial de Orden. Siempre visible, estilo secundario (ghost) para no
+   competir con la acción primaria "+ Nuevo proceso". */
+.renumerar-btn {
+  background: transparent;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.renumerar-btn:hover {
+  background: var(--cyan);
+  color: var(--bg);
 }
 
 /* Estado chip */
@@ -995,9 +1066,14 @@ html, body, #root {
     padding: 14px;
   }
 
-  .add-process-btn {
+  .add-process-btn,
+  .renumerar-btn {
     padding: 9px 16px;
     font-size: 14px;
+  }
+
+  .table-toolbar-actions {
+    flex-wrap: wrap;
   }
 
   .table-scroll-hint {

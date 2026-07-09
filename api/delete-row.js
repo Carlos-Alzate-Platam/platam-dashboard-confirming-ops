@@ -4,39 +4,6 @@ const { isAuthenticated } = require('./_lib/session')
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_t64uj3iFNSNl-_SNGotD5bPb1a81QVA'
 const SHEET_TAB = process.env.SHEET_TAB || 'Seguimiento'
 
-// Urgencia (columna S, fórmula de la hoja) se deja fuera a propósito: es de
-// solo lectura. Orden (columna A) sí se incluye, pero solo para el
-// renumerado automático por lote — insertar fila entre dos existentes,
-// borrar una fila (api/delete-row.js) y el botón "Renumerar" (vista
-// Procesos) — nunca se expone como celda editable en la tabla (ver
-// EDITABLE_FIELDS en src/constants.js, que la excluye a propósito).
-// Debe coincidir exactamente con el mapeo de api/update.js.
-const FIELD_TO_COLUMN = {
-  orden: 'A',
-  ordenSecundario: 'B',
-  nombre: 'C',
-  tipo: 'D',
-  severidad: 'E',
-  descripcion: 'F',
-  responsables: 'G',
-  naturaleza: 'H',
-  tipoIntervencion: 'I',
-  tratamiento: 'J',
-  estado: 'K',
-  notas: 'L',
-  update1: 'M',
-  update2: 'N',
-  update3: 'O',
-  kpis: 'P',
-  probabilidad: 'Q',
-  impacto: 'R',
-  controlPreventivo: 'T',
-  controlDetectivo: 'U',
-  controlCorrectivo: 'V',
-  frecuenciaRevision: 'W',
-  responsableMonitoreo: 'X',
-}
-
 function apiError(statusCode, code, error, detail) {
   const err = new Error(error)
   err.statusCode = statusCode
@@ -160,7 +127,7 @@ function parseBody(req) {
 
 function sendError(res, err) {
   const statusCode = err.statusCode || 500
-  console.error(`[api/batch-update] ${err.code || 'ERROR'} (HTTP ${statusCode}):`, err.detail || err.message)
+  console.error(`[api/delete-row] ${err.code || 'ERROR'} (HTTP ${statusCode}):`, err.detail || err.message)
   return res.status(statusCode).json({
     error: err.message,
     code: err.code || 'UNKNOWN_ERROR',
@@ -193,42 +160,14 @@ module.exports = async function handler(req, res) {
     })
   }
 
-  const { updates } = body
+  const { sheetRow } = body
 
-  if (!Array.isArray(updates) || !updates.length) {
+  if (typeof sheetRow !== 'number' || sheetRow < 2) {
     return res.status(400).json({
-      error: 'Faltan parámetros en la solicitud.',
-      code: 'MISSING_PARAMS',
-      detail: 'Se requiere "updates": un arreglo con al menos un elemento {sheetRow, field, value}.',
+      error: `sheetRow inválido: ${sheetRow}. Debe ser un número >= 2.`,
+      code: 'INVALID_SHEET_ROW',
+      detail: 'sheetRow=1 sería el encabezado, que nunca debe borrarse desde el dashboard.',
     })
-  }
-
-  for (const item of updates) {
-    const { sheetRow, field, value } = item || {}
-
-    if (typeof sheetRow !== 'number' || sheetRow < 2) {
-      return res.status(400).json({
-        error: `sheetRow inválido: ${sheetRow}. Debe ser un número >= 2.`,
-        code: 'INVALID_SHEET_ROW',
-        detail: 'sheetRow=1 sería el encabezado, que nunca debe editarse desde el dashboard.',
-      })
-    }
-
-    if (!field || value === undefined) {
-      return res.status(400).json({
-        error: 'Faltan parámetros en un elemento de "updates".',
-        code: 'MISSING_PARAMS',
-        detail: `Se recibió: ${JSON.stringify(item)}. Se requieren: sheetRow (número), field, value.`,
-      })
-    }
-
-    if (!FIELD_TO_COLUMN[field]) {
-      return res.status(400).json({
-        error: `Campo no editable desde el dashboard: "${field}".`,
-        code: 'FIELD_NOT_EDITABLE',
-        detail: `Solo se permite editar: ${Object.keys(FIELD_TO_COLUMN).join(', ')}.`,
-      })
-    }
   }
 
   let auth
@@ -238,23 +177,52 @@ module.exports = async function handler(req, res) {
     return sendError(res, err)
   }
 
-  const data = updates.map(({ sheetRow, field, value }) => ({
-    range: `${SHEET_TAB}!${FIELD_TO_COLUMN[field]}${sheetRow}`,
-    values: [[value]],
-  }))
+  const sheets = google.sheets({ version: 'v4', auth })
 
+  // El borrado físico de una fila usa spreadsheets.batchUpdate (estructura de
+  // la hoja), a diferencia de update.js/batch-update.js que solo escriben
+  // valores de celda con spreadsheets.values.*. Ese endpoint necesita el
+  // sheetId numérico interno de la pestaña (no su nombre), así que primero
+  // se resuelve consultando los metadatos de la hoja.
+  let sheetId
   try {
-    const sheets = google.sheets({ version: 'v4', auth })
-    await sheets.spreadsheets.values.batchUpdate({
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId: SPREADSHEET_ID,
+      fields: 'sheets.properties',
+    })
+    const tab = (meta.data.sheets || []).find(s => s.properties.title === SHEET_TAB)
+    if (!tab) {
+      return sendError(res, apiError(
+        404,
+        'SHEET_TAB_NOT_FOUND',
+        `No se encontró la pestaña "${SHEET_TAB}" en la hoja de cálculo.`,
+        `Verifica que SHEET_TAB coincida exactamente con el nombre de la pestaña (mayúsculas incluidas).`
+      ))
+    }
+    sheetId = tab.properties.sheetId
+  } catch (err) {
+    return sendError(res, classifyGoogleError(err))
+  }
+
+  // El renumerado de Orden para las filas restantes se escribe aparte, antes
+  // de llamar aquí (ver handleDeleteRow en App.jsx) — a esos updates de valor
+  // les sigue sirviendo el sheetRow anterior al borrado. Este endpoint solo
+  // borra la fila; startIndex/endIndex son 0-based y exclusivos al final,
+  // así que la fila 1-based `sheetRow` corresponde a [sheetRow-1, sheetRow).
+  try {
+    await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: {
-        valueInputOption: 'USER_ENTERED',
-        data,
+        requests: [{
+          deleteDimension: {
+            range: { sheetId, dimension: 'ROWS', startIndex: sheetRow - 1, endIndex: sheetRow },
+          },
+        }],
       },
     })
   } catch (err) {
     return sendError(res, classifyGoogleError(err))
   }
 
-  res.json({ ok: true, updated: updates.length })
+  res.json({ ok: true, deletedRow: sheetRow })
 }
