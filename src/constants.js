@@ -176,10 +176,6 @@ export const EDITABLE_FIELDS = {
   responsableMonitoreo: null,
 }
 
-export function esRiesgo(naturaleza) {
-  return Boolean(naturaleza && naturaleza.trim())
-}
-
 function normalizarTexto(str) {
   return str
     .trim()

@@ -4,7 +4,6 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import {
   EDITABLE_FIELDS,
-  esRiesgo,
   esRiesgoVisibleEnTab,
   ESTADOS,
   ESTADO_STYLE,
@@ -604,7 +603,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
               process={process}
               field="naturaleza"
               options={EDITABLE_FIELDS.naturaleza}
-              extraClass={esRiesgo(process.naturaleza) ? 'risk' : 'empty'}
+              extraClass={esRiesgoVisibleEnTab(process.naturaleza) ? 'risk' : (process.naturaleza ? undefined : 'empty')}
               editCell={editCell}
               editValue={editValue}
               setEditValue={setEditValue}

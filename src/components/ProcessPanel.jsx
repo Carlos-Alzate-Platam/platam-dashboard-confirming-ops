@@ -1,4 +1,4 @@
-import { esRiesgo } from '../constants'
+import { esRiesgoVisibleEnTab } from '../constants'
 
 function Field({ label, value, isRisk }) {
   return (
@@ -23,7 +23,7 @@ function Field({ label, value, isRisk }) {
 export default function ProcessPanel({ process, onClose }) {
   if (!process) return null
 
-  const riesgo = esRiesgo(process.naturaleza)
+  const riesgo = esRiesgoVisibleEnTab(process.naturaleza)
 
   return (
     <aside className="process-panel" aria-label="Detalle del proceso">
