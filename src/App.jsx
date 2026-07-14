@@ -5,11 +5,14 @@ import GestionTable from './components/GestionTable'
 import BubbleMap from './components/BubbleMap'
 import ProcessPanel from './components/ProcessPanel'
 import NewProcessModal from './components/NewProcessModal'
+import ProcesoVistaToggle from './components/ProcesoVistaToggle'
 import {
   COLUMNS_PROCESOS,
   COLUMNS_PM,
   COLUMNS_RIESGOS,
   esRiesgoVisibleEnTab,
+  esVisibleEnVistaProceso,
+  VISTA_PROCESO,
   ordenarPorOrdenAscendente,
   buildRenumeracionSecuencial,
 } from './constants'
@@ -19,6 +22,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('procesos')
   const [selectedProcess, setSelectedProcess] = useState(null)
   const [newProcessDefaultTipo, setNewProcessDefaultTipo] = useState(null)
+  // Filtro "Proceso Actual"/"Proceso Ideal" (Procesos y Mapa de procesos) —
+  // se mantiene mientras el usuario navega la app en esta sesión, pero no
+  // persiste entre recargas. Riesgos y Project manager no lo usan.
+  const [procesoVista, setProcesoVista] = useState(VISTA_PROCESO.ACTUAL)
   // Solo se usa cuando el formulario se abrió desde el botón "+" de insertar
   // entre dos filas (vista Procesos) — ver openInsertRowModal más abajo.
   // null cuando el formulario se abrió desde "+ Nuevo proceso" (alta normal
@@ -34,6 +41,23 @@ export default function App() {
     () => processes.filter(p => esRiesgoVisibleEnTab(p.naturaleza)),
     [processes]
   )
+
+  // Solo para Procesos y Mapa de procesos — Riesgos y Project manager siguen
+  // su propia lógica de filtro sin importar Actual/Propuesto (ver arriba).
+  const procesosVistaFiltrados = useMemo(
+    () => processes.filter(p => esVisibleEnVistaProceso(p.tipo, procesoVista)),
+    [processes, procesoVista]
+  )
+
+  // Si el proceso seleccionado en el Mapa deja de ser visible al cambiar el
+  // filtro (ej. era Propuesto y se pasa a "Proceso Actual"), cierra el panel
+  // en vez de dejarlo mostrando un proceso que ya no está en el mapa.
+  function handleProcesoVistaChange(vista) {
+    setProcesoVista(vista)
+    setSelectedProcess(prev =>
+      prev && !esVisibleEnVistaProceso(prev.tipo, vista) ? null : prev
+    )
+  }
 
   function handleTabChange(tab) {
     setActiveTab(tab)
@@ -174,7 +198,7 @@ export default function App() {
           <>
             {activeTab === 'procesos' && (
               <GestionTable
-                processes={processes}
+                processes={procesosVistaFiltrados}
                 onUpdate={updateCell}
                 onAddNew={() => openNewProcessModal('Proceso')}
                 columns={COLUMNS_PROCESOS}
@@ -186,6 +210,7 @@ export default function App() {
                 onDeleteRow={handleDeleteRow}
                 enableRenumerar
                 onRenumerar={handleRenumerar}
+                filterBar={<ProcesoVistaToggle value={procesoVista} onChange={setProcesoVista} />}
               />
             )}
 
@@ -215,35 +240,40 @@ export default function App() {
             )}
 
             {activeTab === 'map' && (
-              <div className="map-view">
-                <div className="map-canvas">
-                  <BubbleMap
-                    processes={processes}
-                    onSelect={setSelectedProcess}
-                    selectedId={selectedProcess?.sheetRow}
-                  />
-                  <div className="map-legend">
-                    <div className="legend-item">
-                      <div className="legend-dot" style={{ background: '#EF4444' }} />
-                      Atención
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-dot" style={{ background: '#3A4278' }} />
-                      Proceso
-                    </div>
-                    <div className="legend-item">
-                      <div className="legend-dot legend-dot-dashed" style={{ borderColor: '#818CF8' }} />
-                      Propuesto
-                    </div>
-                  </div>
-                  <div className="map-hint">Haz clic en una burbuja para ver el detalle</div>
+              <div className="map-view-container">
+                <div className="map-toolbar">
+                  <ProcesoVistaToggle value={procesoVista} onChange={handleProcesoVistaChange} />
                 </div>
-                {selectedProcess && (
-                  <ProcessPanel
-                    process={selectedProcess}
-                    onClose={() => setSelectedProcess(null)}
-                  />
-                )}
+                <div className="map-view">
+                  <div className="map-canvas">
+                    <BubbleMap
+                      processes={procesosVistaFiltrados}
+                      onSelect={setSelectedProcess}
+                      selectedId={selectedProcess?.sheetRow}
+                    />
+                    <div className="map-legend">
+                      <div className="legend-item">
+                        <div className="legend-dot" style={{ background: '#EF4444' }} />
+                        Atención
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-dot" style={{ background: '#3A4278' }} />
+                        Proceso
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-dot legend-dot-dashed" style={{ borderColor: '#818CF8' }} />
+                        Propuesto
+                      </div>
+                    </div>
+                    <div className="map-hint">Haz clic en una burbuja para ver el detalle</div>
+                  </div>
+                  {selectedProcess && (
+                    <ProcessPanel
+                      process={selectedProcess}
+                      onClose={() => setSelectedProcess(null)}
+                    />
+                  )}
+                </div>
               </div>
             )}
           </>

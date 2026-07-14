@@ -192,6 +192,23 @@ export function esPropuesto(tipo) {
   return Boolean(tipo) && normalizarTexto(tipo) === 'propuesto'
 }
 
+// Filtro "Proceso Actual" / "Proceso Ideal" (vistas Procesos y Mapa de
+// procesos) — calculado en código, no una fórmula en Sheets, igual que
+// esRiesgoVisibleEnTab. "Actual" es lo que hoy existe en la operación real
+// (Proceso + Atención); "Ideal" agrega también lo Propuesto (estado
+// objetivo). Riesgos y Project manager no usan este filtro.
+export const VISTA_PROCESO = {
+  ACTUAL: 'actual',
+  IDEAL: 'ideal',
+}
+
+export function esVisibleEnVistaProceso(tipo, vista) {
+  if (vista === VISTA_PROCESO.IDEAL) {
+    return tipo === 'Proceso' || esAtencion(tipo) || esPropuesto(tipo)
+  }
+  return tipo === 'Proceso' || esAtencion(tipo)
+}
+
 export const ESTADO_STYLE = {
   Resuelto: { color: '#4AE54A', bg: '#0E2A14' },
   'En piloto': { color: '#2ADBA4', bg: '#0A2420' },

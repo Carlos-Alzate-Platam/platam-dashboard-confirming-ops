@@ -606,6 +606,42 @@ html, body, #root {
   border-width: 1px;
 }
 
+/* Vista toggle "Proceso Actual" / "Proceso Ideal" (Procesos, Mapa de
+   procesos) — selección única, por eso es un grupo segmentado y no una fila
+   de pills sueltas como .estado-filter-bar (que sí es multi-selección). */
+.vista-toggle {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 12px;
+}
+
+.vista-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.vista-toggle-btn:hover {
+  color: var(--text);
+}
+
+.vista-toggle-btn.active {
+  background: var(--cyan);
+  color: var(--bg);
+}
+
 /* Tipo chip */
 .tipo-chip {
   display: inline-block;
@@ -692,9 +728,24 @@ html, body, #root {
 }
 
 /* Map view */
+.map-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.map-toolbar {
+  padding: 24px 24px 0;
+  flex-shrink: 0;
+}
+
+.map-toolbar .vista-toggle {
+  margin-bottom: 0;
+}
+
 .map-view {
   display: flex;
-  height: 100%;
+  flex: 1;
   overflow: hidden;
 }
 

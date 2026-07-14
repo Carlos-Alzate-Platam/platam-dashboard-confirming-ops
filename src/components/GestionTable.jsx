@@ -349,7 +349,7 @@ function riskRowClassName(process, highlightRiesgo) {
   return highlightRiesgo && esRiesgoVisibleEnTab(process.naturaleza) ? 'risk-row' : undefined
 }
 
-export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton, highlightRiesgo, enableInsertRow, onInsertRow, enableDeleteRow, onDeleteRow, enableRenumerar, onRenumerar }) {
+export default function GestionTable({ processes, onUpdate, onAddNew, columns, defaultSortKey, enableDragReorder, onReorder, enableEstadoFilter, hideAddButton, highlightRiesgo, enableInsertRow, onInsertRow, enableDeleteRow, onDeleteRow, enableRenumerar, onRenumerar, filterBar }) {
   const [sortKey, setSortKey] = useState(defaultSortKey || 'orden')
   const [sortDir, setSortDir] = useState('asc')
   const [editCell, setEditCell] = useState(null)
@@ -834,6 +834,7 @@ export default function GestionTable({ processes, onUpdate, onAddNew, columns, d
 
   return (
     <div className="table-wrapper">
+      {filterBar}
       <div className="table-toolbar">
         {saving ? <p className="saving-indicator">Guardando en Sheets...</p> : <span />}
         {(enableRenumerar || !hideAddButton) && (
